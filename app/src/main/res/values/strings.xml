@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">myWindyTrain</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="app_logo">myWindyTrain Logo</string>
+    <string name="or_by">or by:</string>
+    <string name="find_by_train">Find By Train:</string>
+    <string name="title_activity_find_by_proximity_and_time">Find Any Train By Proximity And Time</string>
+
+
+    <string name="radio_button_distance">Distance</string>
+    <string name="radio_button_time">Time</string>
+    <string name="radio_button_both">Both</string>
+
+
+    <string name="hello_world">Hello world!</string>
+
+<!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>

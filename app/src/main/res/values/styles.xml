@@ -1,0 +1,27 @@
+<resources>
+
+    <color name="black">#000000</color>
+    <color name="white">#ffffff</color>
+
+    <color name="red">#ff0000</color>
+    <color name="blue">#0072bc</color>
+    <color name="brown">#603913</color>
+    <color name="green">#00a651</color>
+    <color name="orange">#F9461C</color>
+    <color name="purple">#522398</color>
+    <color name="pink">#f49ac1</color>
+    <color name="yellow">#fff200</color>
+
+
+    <color name="offwhite">#bdc3ca</color>
+
+
+
+    <color name="logo_orange">#ffa500</color>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="android:Theme.Holo.Light.NoActionBar">
+
+    </style>
+
+</resources>
