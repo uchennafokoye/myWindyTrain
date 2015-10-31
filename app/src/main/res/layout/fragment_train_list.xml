@@ -1,10 +1,60 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context="com.uchennafokoye.mywindytrain.TrainListFragment">
+<RelativeLayout
+xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:tools="http://schemas.android.com/tools"
+tools:context="com.uchennafokoye.mywindytrain.TrainListFragment"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+    android:layout_margin="@dimen/train_block_margin">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView android:layout_width="match_parent" android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
 
-</FrameLayout>
+
+<View
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/train_block_height"
+    android:layout_marginTop="@dimen/train_block_margin"
+    android:layout_marginBottom="@dimen/train_block_margin"
+    android:id="@+id/train_list_item_view"
+    android:background="@color/blue"
+
+    />
+
+<LinearLayout
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_centerVertical="true"
+    android:layout_marginLeft="@dimen/train_block_section_margin"
+    android:layout_marginRight="@dimen/train_block_section_margin"
+
+    >
+
+
+    <TextView
+        android:layout_width="0dp"
+        android:layout_weight="1.5"
+        android:id="@+id/train_list_item_tv1"
+        android:layout_height="wrap_content"
+        android:text="Distance: 3 miles"/>
+
+    <TextView
+        android:layout_width="0dp"
+        android:layout_weight="2"
+        android:layout_height="wrap_content"
+        android:gravity="right"
+        android:id="@+id/train_list_item_tv2"
+        android:text="Arriving: 1:30 p.m."/>
+
+    <TextView
+        android:layout_width="0dp"
+        android:layout_weight=".5"
+        android:layout_height="wrap_content"
+        android:id="@+id/train_list_item_tv3"
+        android:textSize="@dimen/medium_size_text"
+        android:text=">"
+        android:gravity="right"/>
+
+</LinearLayout>
+
+
+
+</RelativeLayout>

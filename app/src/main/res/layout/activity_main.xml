@@ -41,12 +41,14 @@
                 android:background="@color/red"
                 />
 
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/train_block_height"
                 android:layout_marginTop="@dimen/train_block_margin"
                 android:layout_marginBottom="@dimen/train_block_margin"
                 android:background="@color/blue"
+
                 />
 
 

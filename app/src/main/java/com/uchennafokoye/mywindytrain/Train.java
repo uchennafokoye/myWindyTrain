@@ -35,13 +35,21 @@ public class Train {
         return this.next_arrival;
     }
 
+    public TrainColor getTrainColor() {return this.color; }
+
 
     public static String getTimeString(Date next_arrival) {
-        return new Time(next_arrival.getTime()).toString();
+        return new Time(next_arrival.getTime()).toString() + " pm";
     }
 
     public String getTimeString() {
-        return new Time(next_arrival.getTime()).toString();
+        return getTimeString(next_arrival);
+    }
+
+
+    @Override
+    public String toString() {
+        return "Distance: " + distance.toString() + " Next Arrival: " + getTimeString();
     }
 
 
@@ -49,7 +57,7 @@ public class Train {
 
         Geolocation g = new Geolocation(16.205753, 5.835114);
         Distance d = new Distance(3.5, "miles");
-        Date n_a = new Date(1445959800);
+        Date n_a = new Date();
         TrainColor t_c = new TrainColor("green");
 
         Train t = new Train(t_c, g, d, n_a);

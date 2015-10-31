@@ -12,4 +12,6 @@
     <dimen name="medium_size_text">20dp</dimen>
 
     <dimen name="small_margin">3dp</dimen>
+    <dimen name="average_margin">10dp</dimen>
+
 </resources>
