@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/MyWindyTrain.iml" filepath="$PROJECT_DIR$/MyWindyTrain.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/myWindyTrain.iml" filepath="$PROJECT_DIR$/myWindyTrain.iml" />
     </modules>
   </component>
 </project>

@@ -6,12 +6,17 @@ import java.util.Date;
 /**
  * Created by faithfulokoye on 10/29/15.
  */
+
+//https://mwtservice.herokuapp.com/Blue/closest/41.876935/-87.62951699999996
+//http://www.tutorialspoint.com/android/android_google_maps.htm
+
 public class Train {
 
     private TrainColor color;
     private Geolocation geolocation;
     private Distance distance;
     private Date next_arrival;
+    private String[] trainLines;
 
 
     public Train(TrainColor color, Geolocation geolocation, Distance distance, Date next_arrival){
