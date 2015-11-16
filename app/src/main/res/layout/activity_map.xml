@@ -7,28 +7,57 @@
     tools:context="com.uchennafokoye.mywindytrain.Map">
 
 
+
     <LinearLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:id="@+id/map_bar"
-        android:layout_height="30dp"
+        android:layout_height="wrap_content"
         android:layout_centerVertical="true"
-        android:gravity="center_vertical"
-        android:layout_padding="@dimen/train_block_section_margin"
-        android:background="#262bff">
+        android:background="@color/logo_orange"
+
+        >
+
+
 
         <TextView
             android:layout_width="0dp"
-            android:layout_weight="1.5"
-            android:id="@+id/train_list_item_tv1"
+            android:layout_weight="2"
+            android:id="@+id/tv_station_info_name"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="10dp"
-            android:text="Distance: 3 miles"/>
+            android:layout_marginTop="@dimen/train_block_section_margin"
+            android:layout_marginLeft="@dimen/train_block_section_margin"
+            android:text="Loading..."
+            android:textColor="@color/black"
+            />
 
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:id="@+id/tv_station_info_distance"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/train_block_section_margin"
+            android:layout_marginLeft="@dimen/train_block_section_margin"
+            android:textColor="@color/black"
+            android:text=""/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:id="@+id/tv_station_info_duration"
+            android:layout_marginTop="@dimen/train_block_section_margin"
+            android:layout_marginRight="@dimen/train_block_section_margin"
+            android:gravity="right"
+            android:text=""
+            android:textColor="@color/black"
+            />
 
     </LinearLayout>
 
-    <fragment
+
+
+<fragment
         android:id="@+id/map"
         android:name="com.google.android.gms.maps.MapFragment"
         android:layout_width="match_parent"
