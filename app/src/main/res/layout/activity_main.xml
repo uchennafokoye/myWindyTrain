@@ -39,6 +39,7 @@
                 android:layout_marginTop="@dimen/train_block_margin"
                 android:layout_marginBottom="@dimen/train_block_margin"
                 android:background="@color/red"
+                android:tag="red"
                 />
 
 
@@ -48,6 +49,8 @@
                 android:layout_marginTop="@dimen/train_block_margin"
                 android:layout_marginBottom="@dimen/train_block_margin"
                 android:background="@color/blue"
+                android:tag="blue"
+
 
                 />
 
@@ -58,6 +61,8 @@
                 android:layout_marginTop="@dimen/train_block_margin"
                 android:layout_marginBottom="@dimen/train_block_margin"
                 android:background="@color/brown"
+                android:tag="brown"
+
                 />
 
             <View
@@ -66,6 +71,8 @@
                 android:layout_marginTop="@dimen/train_block_margin"
                 android:layout_marginBottom="@dimen/train_block_margin"
                 android:background="@color/orange"
+                android:tag="orange"
+
                 />
 
             <View
@@ -74,6 +81,8 @@
                 android:layout_marginTop="@dimen/train_block_margin"
                 android:layout_marginBottom="@dimen/train_block_margin"
                 android:background="@color/green"
+                android:tag="green"
+
                 />
 
 
@@ -83,6 +92,8 @@
                 android:layout_marginTop="@dimen/train_block_margin"
                 android:layout_marginBottom="@dimen/train_block_margin"
                 android:background="@color/pink"
+                android:tag="pink"
+
                 />
 
 
@@ -92,6 +103,8 @@
                 android:layout_marginTop="@dimen/train_block_margin"
                 android:layout_marginBottom="@dimen/train_block_margin"
                 android:background="@color/purple"
+                android:tag="purple"
+
                 />
 
             <View
@@ -100,6 +113,8 @@
                 android:layout_marginTop="@dimen/train_block_margin"
                 android:layout_marginBottom="@dimen/train_block_margin"
                 android:background="@color/yellow"
+                android:tag="yellow"
+
                 />
 
         </LinearLayout>
@@ -115,7 +130,8 @@
             android:backgroundTint="@color/logo_orange"
             android:textColor="@color/black"
             android:text="ANY TRAIN"
-            android:id="@+id/button"
+            android:tag="any"
+            android:id="@+id/any_train_button"
             android:layout_alignParentBottom="true"
             />
 
