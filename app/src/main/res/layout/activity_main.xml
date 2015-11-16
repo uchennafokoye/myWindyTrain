@@ -114,7 +114,7 @@
             android:layout_height="wrap_content"
             android:backgroundTint="@color/logo_orange"
             android:textColor="@color/black"
-            android:text="Distance &amp; Time"
+            android:text="ANY TRAIN"
             android:id="@+id/button"
             android:layout_alignParentBottom="true"
             />

@@ -1,6 +1,7 @@
 package com.uchennafokoye.mywindytrain;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -16,9 +17,11 @@ import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -43,11 +46,17 @@ import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.os.Handler;
 
+
+
 public class Map extends Activity {
+
+    ProgressDialog progressDialog;
+    private int progressBarStatus = 0;
+    private Handler progressBarHandler = new Handler();
 
     GoogleMap googleMap;
     GoogleDirection md = new GoogleDirection();
-
+    private int progressValue = 0;
 
     double to_longitude;
     double to_latitude;
@@ -75,12 +84,102 @@ public class Map extends Activity {
     }
 
     private void init() {
+
+        initializeProgressDialog();
         setUpMapIfNeeded();
         networkAvailabilityMessage();
 //        attemptHttpAsyncTask();
         watchLocation();
 
     }
+
+    private void initializeProgressDialog() {
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setCancelable(true);
+        progressDialog.setMessage("Loading Closest Location");
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        progressDialog.setProgress(0);
+        progressDialog.setMax(100);
+        progressDialog.show();
+
+        progressBarStatus = 0;
+
+        new Thread(new Runnable() {
+            private int progressValueAnimatable = 0;
+
+            public void run() {
+
+                while (progressBarStatus < 100) {
+
+                    if (progressValueAnimatable >= getProgressValue() && progressValueAnimatable < 99){
+                        progressValueAnimatable += 5;
+                    } else {
+                        progressValueAnimatable = getProgressValue();
+                    }
+
+                    progressBarStatus = progressValueAnimatable;
+                    Log.d("ProgressValue", progressBarStatus + "");
+
+                    try {
+                        Thread.sleep(1000);
+
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    progressBarHandler.post(new Runnable() {
+                        public void run() {
+                            progressDialog.setProgress(progressBarStatus);
+                        }
+                    });
+
+
+                }
+
+                if (progressBarStatus >= 100){
+                    try {
+                        Thread.sleep(2000);
+
+                    } catch(InterruptedException e){
+                        e.printStackTrace();
+                    }
+
+                    progressDialog.dismiss();
+
+                }
+
+            }
+
+        }).start();
+    }
+
+    public int getProgressValue() {
+
+        if (googleMap == null){
+            return 0;
+        }
+
+        if (locationService == null){
+            return 10;
+        }
+
+        if (current_location == null){
+            return 50;
+        }
+
+        if (!httpRequested) {
+            return 70;
+        }
+
+        if (httpRequested & progressValue < 100) {
+            return 99;
+        }
+
+        return 100;
+
+
+    }
+
 
     @Override
     protected void onResume() {
@@ -93,9 +192,9 @@ public class Map extends Activity {
         if (googleMap == null) {
             // Try to obtain the map from the GetFragmentManager
             googleMap = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
-            googleMap.animateCamera(CameraUpdateFactory.zoomTo(18));
 
         }
+        googleMap.animateCamera(CameraUpdateFactory.zoomTo(18));
     }
 
 
@@ -142,6 +241,9 @@ public class Map extends Activity {
                 trainsAtStation = "Trains At Station: " + listOfTrains.join(",");
                 httpRequested = true;
 
+                Toast toast = Toast.makeText(getBaseContext(), "Found closest train station! " + station_name, Toast.LENGTH_SHORT);
+                toast.show();
+
                 drawDirections();
 
                 Log.d("current_location", current_location + "");
@@ -186,6 +288,7 @@ public class Map extends Activity {
         Document doc = md.getDocument(fromPosition, toPosition, GoogleDirection.MODE_WALKING);
         drawPolyline(doc);
         updateMapBar(doc);
+        progressValue = 100;
 
     }
 
@@ -245,7 +348,9 @@ public class Map extends Activity {
 
                     if (locationService.locationChangedSinceLastChecked()){
                         if (locationService.distanceTraveled() > 2){
+                            initializeProgressDialog();
                             httpRequested = false;
+                            progressValue = 0;
                             attemptHttpAsyncTask();
                         } else {
                             drawDirections();
