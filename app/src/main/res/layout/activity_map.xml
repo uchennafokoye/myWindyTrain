@@ -7,6 +7,51 @@
     tools:context="com.uchennafokoye.mywindytrain.Map">
 
 
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:background="@color/black"
+
+        >
+
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:src="@mipmap/back_button"
+            android:onClick="goBack"
+            android:contentDescription="Back Button" />
+
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/train_block_section_margin"
+            android:layout_marginLeft="@dimen/train_block_section_margin"
+            android:text="You searched for: "
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:id="@+id/tv_search_criteria_info"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/train_block_section_margin"
+            android:text="Green Line"
+            android:textStyle="bold"
+            android:textColor="@color/green"
+            android:layout_marginTop="@dimen/abc_action_bar_content_inset_material"
+            android:layout_marginBottom="@dimen/abc_action_bar_content_inset_material"
+
+            />
+
+
+    </LinearLayout>
 
     <LinearLayout
         android:orientation="horizontal"
@@ -14,6 +59,7 @@
         android:layout_height="wrap_content"
         android:layout_centerVertical="true"
         android:background="@color/logo_orange"
+
 
         >
 
@@ -28,6 +74,7 @@
             android:layout_marginLeft="@dimen/train_block_section_margin"
             android:text="Loading..."
             android:textColor="@color/black"
+            android:textStyle="bold"
             />
 
 
@@ -39,6 +86,7 @@
             android:layout_marginTop="@dimen/train_block_section_margin"
             android:layout_marginLeft="@dimen/train_block_section_margin"
             android:textColor="@color/black"
+            android:textStyle="bold"
             android:text=""/>
 
         <TextView
@@ -50,7 +98,10 @@
             android:layout_marginRight="@dimen/train_block_section_margin"
             android:gravity="right"
             android:text=""
+            android:textStyle="bold"
             android:textColor="@color/black"
+            android:layout_marginBottom="@dimen/abc_action_bar_content_inset_material"
+
             />
 
     </LinearLayout>

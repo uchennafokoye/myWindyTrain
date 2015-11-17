@@ -5,6 +5,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
@@ -21,6 +22,14 @@ public class MainActivity extends Activity implements View.OnClickListener{
     Location current_location;
     private LocationService locationService;
     private boolean bound = false;
+    private boolean paused = false;
+
+    SharedPreferences sharedPreferences;
+    public static final String MyPREFERENCES = "MyPrefs";
+    public static final String CURRENT_LATITUDE = "CurrentLocationLatitude";
+    public static final String CURRENT_LONGITUDE = "CurrentLocationLongitude";
+
+
 
 
 
@@ -42,6 +51,12 @@ public class MainActivity extends Activity implements View.OnClickListener{
         Button any_train = (Button) findViewById(R.id.any_train_button);
         any_train.setOnClickListener(this);
 
+        sharedPreferences = getSharedPreferences(MyPREFERENCES, Context.MODE_PRIVATE);
+
+        Log.d("SHAREDPREFERENCES", "CURRENT LATITUDE: " + sharedPreferences.getFloat(MainActivity.CURRENT_LATITUDE, (float) 0.0));
+        Log.d("SHAREDPREFERENCES", "CURRENT LONGITUDE: " + sharedPreferences.getFloat(MainActivity.CURRENT_LONGITUDE, (float) 0.0));
+
+        watchLocation();
 
 
     }
@@ -71,11 +86,13 @@ public class MainActivity extends Activity implements View.OnClickListener{
 
                     current_location = locationService.getLocation();
 
+
+
                     Log.d("current_location", current_location + "");
 
                 }
 
-                handler.postDelayed(this, 10000);
+                if (!paused) handler.postDelayed(this, 10000);
             }
         });
     }
@@ -90,8 +107,41 @@ public class MainActivity extends Activity implements View.OnClickListener{
         if (color != null){
             intent.putExtra(Map.COLORMESSAGE, color);
         }
+
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+
+        Float savedLatitude;
+        Float savedLongitude;
+
+        if (current_location != null){
+            savedLatitude = (float) current_location.getLatitude();
+            savedLongitude = (float) current_location.getLongitude();
+        } else {
+            savedLatitude = (float) 0.0;
+            savedLongitude = (float) 0.0;
+        }
+
+        editor.putFloat(CURRENT_LATITUDE, savedLatitude);
+        editor.putFloat(CURRENT_LONGITUDE, savedLongitude);
+        editor.commit();
+
+
+
         startActivity(intent);
 
+    }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        paused = false;
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        paused = true;
     }
 
     @Override
@@ -99,6 +149,7 @@ public class MainActivity extends Activity implements View.OnClickListener{
         super.onStart();
         Intent intent = new Intent(this, LocationService.class);
         bindService(intent, connection, Context.BIND_AUTO_CREATE);
+        paused = false;
     }
 
     @Override
@@ -108,6 +159,7 @@ public class MainActivity extends Activity implements View.OnClickListener{
             unbindService(connection);
             bound = false;
         }
+        paused = true;
     }
 
 

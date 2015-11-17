@@ -5,6 +5,7 @@ import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.location.Location;
 import android.net.ConnectivityManager;
@@ -14,6 +15,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -50,7 +52,11 @@ import android.os.Handler;
 
 public class Map extends Activity {
 
+    SharedPreferences sharedPreferences;
+
     public static final String COLORMESSAGE = "message";
+
+    private boolean paused = false;
 
     ProgressDialog progressDialog;
     private int progressBarStatus;
@@ -68,13 +74,308 @@ public class Map extends Activity {
     static Boolean httpRequested;
 
 
+
+
     Location current_location;
     private LocationService locationService;
     private boolean bound = false;
 
     private Boolean firstTimeCameraMove = true;
 
+    public void goBack(View v) {
+        Intent intent = new Intent(this, MainActivity.class);
 
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+
+        Float savedLatitude;
+        Float savedLongitude;
+
+        if (current_location != null){
+            savedLatitude = (float) current_location.getLatitude();
+            savedLongitude = (float) current_location.getLongitude();
+        } else {
+            savedLatitude = (float) 0.0;
+            savedLongitude = (float) 0.0;
+        }
+
+        editor.putFloat(MainActivity.CURRENT_LATITUDE, savedLatitude);
+        editor.putFloat(MainActivity.CURRENT_LONGITUDE, savedLongitude);
+        editor.commit();
+
+
+        startActivity(intent);
+    }
+
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_map);
+        Log.d("ONCREATE", "IN ON CREATE");
+        init();
+    }
+
+    private void init() {
+        resetMapApp();
+        Intent intent = getIntent();
+        color = intent.getStringExtra(COLORMESSAGE);
+
+        TextView tvTrainLine = (TextView) findViewById(R.id.tv_search_criteria_info);
+        if (color != null){
+            tvTrainLine.setText(Character.toUpperCase(color.charAt(0)) + color.substring(1) + " Line" );
+            TrainColor mycolor = new TrainColor(color);
+            tvTrainLine.setTextColor(Color.parseColor(mycolor.color));
+        } else {
+            tvTrainLine.setText("Any Line");
+            tvTrainLine.setTextColor(Color.WHITE);
+        }
+
+        sharedPreferences = getSharedPreferences(MainActivity.MyPREFERENCES, Context.MODE_PRIVATE);
+
+        Log.d("SHAREDPREFERENCES", "CURRENT LATITUDE: " + sharedPreferences.getFloat(MainActivity.CURRENT_LATITUDE, (float) 0.0));
+        Log.d("SHAREDPREFERENCES", "CURRENT LONGITUDE: " + sharedPreferences.getFloat(MainActivity.CURRENT_LONGITUDE, (float) 0.0));
+
+
+        initializeProgressDialog();
+        setUpMapIfNeeded();
+        networkAvailabilityMessage();
+        attemptHttpAsyncTask();
+        watchLocation();
+
+    }
+
+
+
+    private void initializeProgressDialog() {
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setCancelable(true);
+        progressDialog.setMessage("Loading Closest Location");
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        progressDialog.setProgress(0);
+        progressDialog.setMax(100);
+        progressDialog.show();
+
+        progressBarStatus = 0;
+
+        new Thread(new Runnable() {
+            private int progressValueAnimatable = 0;
+
+            public void run() {
+
+                while (progressBarStatus < 100) {
+
+                    int currentProgressValue = getProgressValue();
+                    if (progressValueAnimatable >= currentProgressValue){
+                        if ((progressValueAnimatable + 5) < nextProgressLevel(currentProgressValue)) {
+                            progressValueAnimatable += 5;
+
+                        }
+                    } else {
+                        progressValueAnimatable = getProgressValue();
+                    }
+
+                    progressBarStatus = progressValueAnimatable;
+                    Log.d("ProgressValue", progressBarStatus + "");
+
+                    try {
+                        Thread.sleep(1000);
+
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    progressBarHandler.post(new Runnable() {
+                        public void run() {
+                            progressDialog.setProgress(progressBarStatus);
+                        }
+                    });
+
+
+                }
+
+                if (progressBarStatus >= 100){
+                    try {
+                        Thread.sleep(2000);
+
+                    } catch(InterruptedException e){
+                        e.printStackTrace();
+                    }
+
+                    progressDialog.dismiss();
+
+                }
+
+            }
+
+        }).start();
+    }
+
+    public int getProgressValue() {
+
+        if (googleMap == null){
+            return 0;
+        }
+
+        if (locationService == null){
+            return 10;
+        }
+
+        if (current_location == null){
+            return 50;
+        }
+
+        if (!httpRequested) {
+            return 70;
+        }
+
+        if (httpRequested & progressValue < 100) {
+            return 99;
+        }
+
+        return 100;
+
+
+    }
+
+    public int nextProgressLevel(int progressValue) {
+
+        int nextProgressLevel = 0;
+        switch (progressValue){
+            case 0:
+                nextProgressLevel = 10;
+                break;
+            case 10:
+                nextProgressLevel = 50;
+                break;
+            case 50:
+                nextProgressLevel = 70;
+                break;
+            case 70:
+                nextProgressLevel = 99;
+                break;
+            case 99:
+                nextProgressLevel = 100;
+                break;
+            default:
+                nextProgressLevel = 100;
+                break;
+        }
+
+        return nextProgressLevel;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d("ONCREATE", "IN ON RESUME");
+
+        setUpMapIfNeeded();
+        resetMapApp();
+        paused = false;
+    }
+
+    @Override
+    protected void onPause() {
+        Log.d("ONCREATE", "IN ON PAUSE");
+        super.onPause();
+        resetMapApp();
+        paused = true;
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Intent intent = new Intent(this, LocationService.class);
+        bindService(intent, connection, Context.BIND_AUTO_CREATE);
+        paused = false;
+        Log.d("ONCREATE", "IN ON START");
+
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.d("ONCREATE", "IN ON STOP");
+
+        if (bound) {
+            unbindService(connection);
+            bound = false;
+        }
+        resetMapApp();
+        paused = true;
+    }
+
+
+
+
+    private void setUpMapIfNeeded() {
+        if (googleMap == null) {
+            googleMap = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
+        }
+        googleMap.animateCamera(CameraUpdateFactory.zoomTo(18));
+    }
+
+
+    //ATTEMPT TO CALL HTTP REQUEST
+    private void attemptHttpAsyncTask() {
+
+        if (current_location == null){
+            return;
+        }
+
+        if (!httpRequested){
+
+            String query_string = "/closest/" + current_location.getLatitude() + "/" + current_location.getLongitude();
+
+            if (color != null) {
+                query_string += "/" + color;
+            }
+
+            String url = "https://mwtservice.herokuapp.com" + query_string;
+            Log.d("URL", url);
+            new HttpAsyncTask().execute(url);
+
+        }
+    }
+
+
+
+    private class HttpAsyncTask extends AsyncTask<String, Void, String>{
+        @Override
+        protected String doInBackground(String... urls){
+            return GET(urls[0]);
+        }
+
+        @Override
+        protected void onPostExecute(String result){
+
+            try {
+                JSONObject closest_station = new JSONObject(result);
+
+                to_latitude = closest_station.getDouble("latitude");
+                to_longitude = closest_station.getDouble("longitude");
+                station_name = closest_station.getString("name");
+                JSONArray listOfTrains = closest_station.getJSONArray("trains");
+                trainsAtStation = "Trains At Station: " + listOfTrains.join(",");
+                httpRequested = true;
+
+                Toast toast = Toast.makeText(getBaseContext(), "Found closest train station! " + station_name, Toast.LENGTH_SHORT);
+                toast.show();
+
+                drawDirections();
+
+                Log.d("current_location", current_location + "");
+
+            } catch(JSONException e) {
+                Log.d("JSON", e.getLocalizedMessage());
+            }
+
+
+        }
+    }
+
+    // LOCATION SERVICE
 
     private ServiceConnection connection = new ServiceConnection() {
         @Override
@@ -89,88 +390,140 @@ public class Map extends Activity {
         }
     };
 
+    private void drawDirections() {
+
+        googleMap.clear();
 
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_map);
-        Log.d("ONCREATE", "IN ON CREATE");
+        if (current_location == null || !httpRequested) return;
+
+        LatLng fromPosition = new LatLng(current_location.getLatitude(), current_location.getLongitude());
+        drawCurrentLocation(fromPosition);
+
+        LatLng toPosition = new LatLng(to_latitude, to_longitude);
+        Log.d("toPosition", to_latitude + " " + to_longitude);
+        googleMap.addMarker(new MarkerOptions().position(toPosition).title(station_name).snippet(trainsAtStation));
+
+        Document doc = md.getDocument(fromPosition, toPosition, GoogleDirection.MODE_WALKING);
+        drawPolyline(doc);
+        updateMapBar(doc);
+        progressValue = 100;
+
     }
 
-        @Override
-    protected void onStart() {
-        super.onStart();
-        Intent intent = new Intent(this, LocationService.class);
-        bindService(intent, connection, Context.BIND_AUTO_CREATE);
-    }
+    private void drawCurrentLocation(LatLng current_location) {
 
-    @Override
-    protected void onStop() {
-        super.onStop();
 
-        if (bound) {
-            unbindService(connection);
-            bound = false;
+        googleMap.addMarker(new MarkerOptions().position(current_location).title("Current Position").flat(true).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
+
+        if (firstTimeCameraMove){
+            googleMap.moveCamera(CameraUpdateFactory.newLatLng(current_location));
+            firstTimeCameraMove = false;
         }
+
     }
 
-        private class HttpAsyncTask extends AsyncTask<String, Integer, String>{
-        @Override
-        protected String doInBackground(String... urls){
 
-            //SLEEP WHILE LOCATION SERVICE IS BEING BINDED
-            while(locationService == null){
-                try {
-                    Thread.sleep(1000);
-                } catch(InterruptedException e){
-                    Thread.interrupted();
+    private void drawPolyline(Document doc) {
+
+        ArrayList<LatLng> directionPoint = md.getDirection(doc);
+        PolylineOptions rectLine = new PolylineOptions().width(20).color(Color.RED);
+
+        for (int i = 0; i < directionPoint.size(); i++){
+            rectLine.add(directionPoint.get(i));
+        }
+
+        googleMap.addPolyline(rectLine);
+
+    }
+
+    private void updateMapBar(Document doc){
+
+
+        TextView distancetv = (TextView) findViewById(R.id.tv_station_info_distance);
+        TextView durationtv = (TextView) findViewById(R.id.tv_station_info_duration);
+        TextView stationNametv = (TextView) findViewById(R.id.tv_station_info_name);
+
+        distancetv.setText(md.getDistanceText(doc));
+        durationtv.setText(md.getDurationText(doc));
+        stationNametv.setText(station_name);
+    }
+
+    private void watchLocation() {
+        final Handler handler = new Handler();
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (locationService != null) {
+
+                    current_location = locationService.getLocation();
+
+                    Log.d("current_location", current_location + "");
+                    Log.d("httpRequested", httpRequested.toString());
+
+                    if (!httpRequested){
+                        attemptHttpAsyncTask();
+                    }
+
+
+                    if (locationService.locationChangedSinceLastChecked()){
+                        if (locationService.distanceTraveled() > 2){
+                            initializeProgressDialog();
+                            httpRequested = false;
+                            progressValue = 0;
+                            attemptHttpAsyncTask();
+                        } else {
+                            drawDirections();
+                        }
+
+                    }
+
                 }
+
+                if (!paused) handler.postDelayed(this, 10000);
             }
-
-            //SLEEP WHILE CURRENT_LOCATION IS STILL NULL
-            while (locationService.getLocation() == null){
-
-                try {
-                    Thread.sleep(1000);
-                } catch(InterruptedException e){
-                    Thread.interrupted();
-                }
-
-            }
-
-            current_location = locationService.getLocation();
-
-            return "To be implemented";
-        }
-
-        @Override
-        protected void onPreExecute() {
-
-
-
-        }
-
-        @Override
-        protected void onProgressUpdate(Integer... progress){
-
-        }
-
-        @Override
-        protected void onPostExecute(String result){
-
-        }
+        });
     }
+
+    // END LOCATION SERVICE
+
+    // CHECK INTERNET CONNECTION
+
+    private void networkAvailabilityMessage() {
+        if (!isConnected()){
+            Toast toast = Toast.makeText(this, "No network available", Toast.LENGTH_SHORT);
+            toast.show();
+        } else {
+            Toast toast = Toast.makeText(this, "You are connected", Toast.LENGTH_SHORT);
+            toast.show();
+        }
+
+    }
+    private boolean isConnected() {
+
+        ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Activity.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+        if (networkInfo != null && networkInfo.isConnected()){
+            return true;
+        } else {
+            return false;
+        }
+
+
+    }
+
 
     // GET  & HTTP HELPER METHODS
     public static String GET(String url){
         InputStream inputStream = null;
         String result = "";
-
         try {
             HttpClient httpclient = new DefaultHttpClient();
+
             HttpResponse httpResponse = httpclient.execute(new HttpGet(url));
+
             inputStream = httpResponse.getEntity().getContent();
+
 
             if (inputStream != null){
                 result = convertInputStreamToString(inputStream);
@@ -180,9 +533,13 @@ public class Map extends Activity {
                 result = "Did not work!";
             }
 
+
+
+
         } catch (Exception e) {
             Log.d("InputStream", e.getLocalizedMessage());
         }
+
         return result;
     }
 
@@ -191,7 +548,7 @@ public class Map extends Activity {
         String line = "";
         String result = "";
 
-        Log.d("InputStream","In Input Stream" + inputStream);
+        Log.d("InputStream", "In Input Stream" + inputStream);
 
         try {
 
@@ -208,472 +565,40 @@ public class Map extends Activity {
 
     }
 
-//
-//
-//    @Override
-//    protected void onCreate(Bundle savedInstanceState) {
-//        super.onCreate(savedInstanceState);
-//        setContentView(R.layout.activity_map);
-//        Log.d("ONCREATE", "IN ON CREATE");
-//        init();
-//    }
-//
-//    private void init() {
-//        resetMapApp();
-//        Intent intent = getIntent();
-//        color = intent.getStringExtra(COLORMESSAGE);
-//        initializeProgressDialog();
-//        setUpMapIfNeeded();
-//        networkAvailabilityMessage();
-//        attemptHttpAsyncTask();
-//        watchLocation();
-//
-//    }
-//
-//    private void initializeProgressDialog() {
-//        progressDialog = new ProgressDialog(this);
-//        progressDialog.setCancelable(true);
-//        progressDialog.setMessage("Loading Closest Location");
-//        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-//        progressDialog.setProgress(0);
-//        progressDialog.setMax(100);
-//        progressDialog.show();
-//
-//        progressBarStatus = 0;
-//
-//        new Thread(new Runnable() {
-//            private int progressValueAnimatable = 0;
-//
-//            public void run() {
-//
-//                while (progressBarStatus < 100) {
-//
-//                    int currentProgressValue = getProgressValue();
-//                    if (progressValueAnimatable >= currentProgressValue){
-//                        if ((progressValueAnimatable + 5) < nextProgressLevel(currentProgressValue)) {
-//                            progressValueAnimatable += 5;
-//
-//                        }
-//                    } else {
-//                        progressValueAnimatable = getProgressValue();
-//                    }
-//
-//                    progressBarStatus = progressValueAnimatable;
-//                    Log.d("ProgressValue", progressBarStatus + "");
-//
-//                    try {
-//                        Thread.sleep(1000);
-//
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//
-//                    progressBarHandler.post(new Runnable() {
-//                        public void run() {
-//                            progressDialog.setProgress(progressBarStatus);
-//                        }
-//                    });
-//
-//
-//                }
-//
-//                if (progressBarStatus >= 100){
-//                    try {
-//                        Thread.sleep(2000);
-//
-//                    } catch(InterruptedException e){
-//                        e.printStackTrace();
-//                    }
-//
-//                    progressDialog.dismiss();
-//
-//                }
-//
-//            }
-//
-//        }).start();
-//    }
-//
-//    public int getProgressValue() {
-//
-//        if (googleMap == null){
-//            return 0;
-//        }
-//
-//        if (locationService == null){
-//            return 10;
-//        }
-//
-//        if (current_location == null){
-//            return 50;
-//        }
-//
-//        if (!httpRequested) {
-//            return 70;
-//        }
-//
-//        if (httpRequested & progressValue < 100) {
-//            return 99;
-//        }
-//
-//        return 100;
-//
-//
-//    }
-//
-//    public int nextProgressLevel(int progressValue) {
-//
-//        int nextProgressLevel = 0;
-//        switch (progressValue){
-//            case 0:
-//                nextProgressLevel = 10;
-//                break;
-//            case 10:
-//                nextProgressLevel = 50;
-//                break;
-//            case 50:
-//                nextProgressLevel = 70;
-//                break;
-//            case 70:
-//                nextProgressLevel = 99;
-//                break;
-//            case 99:
-//                nextProgressLevel = 100;
-//                break;
-//            default:
-//                nextProgressLevel = 100;
-//                break;
-//        }
-//
-//        return nextProgressLevel;
-//    }
-//
-//    @Override
-//    protected void onResume() {
-//        super.onResume();
-//        Log.d("ONCREATE", "IN ON RESUME");
-//
-//        setUpMapIfNeeded();
-//        resetMapApp();
-//    }
-//
-//    private void setUpMapIfNeeded() {
-//        // Do a null check to confirm that we have not already instantiated the map.
-//        if (googleMap == null) {
-//            // Try to obtain the map from the GetFragmentManager
-//            googleMap = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
-//
-//        }
-//        googleMap.animateCamera(CameraUpdateFactory.zoomTo(18));
-//    }
-//
-//
-//    //ATTEMPT TO CALL HTTP REQUEST
-//    private void attemptHttpAsyncTask() {
-//
-//        if (current_location == null){
-//            return;
-//        }
-//
-//        if (!httpRequested){
-//
-//            String query_string = "/closest/" + current_location.getLatitude() + "/" + current_location.getLongitude();
-//
-//            if (color != null) {
-//                query_string += "/" + color;
-//            }
-//
-//            String url = "https://mwtservice.herokuapp.com" + query_string;
-//            Log.d("URL", url);
-//            new HttpAsyncTask().execute(url);
-//
-//        }
-//    }
-//
-//
-//
-//    private class HttpAsyncTask extends AsyncTask<String, Void, String>{
-//        @Override
-//        protected String doInBackground(String... urls){
-//            return GET(urls[0]);
-//        }
-//
-//        @Override
-//        protected void onPostExecute(String result){
-//
-//            try {
-//                JSONObject closest_station = new JSONObject(result);
-//
-//                to_latitude = closest_station.getDouble("latitude");
-//                to_longitude = closest_station.getDouble("longitude");
-//                station_name = closest_station.getString("name");
-//                JSONArray listOfTrains = closest_station.getJSONArray("trains");
-//                trainsAtStation = "Trains At Station: " + listOfTrains.join(",");
-//                httpRequested = true;
-//
-//                Toast toast = Toast.makeText(getBaseContext(), "Found closest train station! " + station_name, Toast.LENGTH_SHORT);
-//                toast.show();
-//
-//                drawDirections();
-//
-//                Log.d("current_location", current_location + "");
-//
-//            } catch(JSONException e) {
-//                Log.d("JSON", e.getLocalizedMessage());
-//            }
-//
-//
-//        }
-//    }
-//
-//    // LOCATION SERVICE
-//
-//    private ServiceConnection connection = new ServiceConnection() {
-//        @Override
-//        public void onServiceConnected(ComponentName componentName, IBinder binder){
-//            LocationService.LocationBinder locationBinder = (LocationService.LocationBinder) binder;
-//            locationService = locationBinder.getLocationService();
-//            bound = true;
-//        }
-//        @Override
-//        public void onServiceDisconnected(ComponentName componentName){
-//            bound = false;
-//        }
-//    };
-//
-//    private void drawDirections() {
-//
-//        googleMap.clear();
-//
-//
-//        if (current_location == null || !httpRequested) return;
-//
-//        LatLng fromPosition = new LatLng(current_location.getLatitude(), current_location.getLongitude());
-//        drawCurrentLocation(fromPosition);
-//
-//        LatLng toPosition = new LatLng(to_latitude, to_longitude);
-//        Log.d("toPosition", to_latitude + " " + to_longitude);
-//        googleMap.addMarker(new MarkerOptions().position(toPosition).title(station_name).snippet(trainsAtStation));
-//
-//        Document doc = md.getDocument(fromPosition, toPosition, GoogleDirection.MODE_WALKING);
-//        drawPolyline(doc);
-//        updateMapBar(doc);
-//        progressValue = 100;
-//
-//    }
-//
-//    private void drawCurrentLocation(LatLng current_location) {
-//
-//
-//        googleMap.addMarker(new MarkerOptions().position(current_location).title("Current Position").flat(true).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
-//
-//        if (firstTimeCameraMove){
-//            googleMap.moveCamera(CameraUpdateFactory.newLatLng(current_location));
-//            firstTimeCameraMove = false;
-//        }
-//
-//    }
-//
-//
-//    private void drawPolyline(Document doc) {
-//
-//        ArrayList<LatLng> directionPoint = md.getDirection(doc);
-//        PolylineOptions rectLine = new PolylineOptions().width(20).color(Color.RED);
-//
-//        for (int i = 0; i < directionPoint.size(); i++){
-//            rectLine.add(directionPoint.get(i));
-//        }
-//
-//        googleMap.addPolyline(rectLine);
-//
-//    }
-//
-//    private void updateMapBar(Document doc){
-//
-//
-//        TextView distancetv = (TextView) findViewById(R.id.tv_station_info_distance);
-//        TextView durationtv = (TextView) findViewById(R.id.tv_station_info_duration);
-//        TextView stationNametv = (TextView) findViewById(R.id.tv_station_info_name);
-//
-//        distancetv.setText(md.getDistanceText(doc));
-//        durationtv.setText(md.getDurationText(doc));
-//        stationNametv.setText(station_name);
-//    }
-//
-//    private void watchLocation() {
-//        final Handler handler = new Handler();
-//        handler.post(new Runnable() {
-//            @Override
-//            public void run() {
-//                if (locationService != null) {
-//
-//                    current_location = locationService.getLocation();
-//
-//                    Log.d("current_location", current_location + "");
-//                    Log.d("httpRequested", httpRequested.toString());
-//
-//                    if (!httpRequested){
-//                        attemptHttpAsyncTask();
-//                    }
-//
-//
-//                    if (locationService.locationChangedSinceLastChecked()){
-//                        if (locationService.distanceTraveled() > 2){
-//                            initializeProgressDialog();
-//                            httpRequested = false;
-//                            progressValue = 0;
-//                            attemptHttpAsyncTask();
-//                        } else {
-//                            drawDirections();
-//                        }
-//
-//                    }
-//
-//                }
-//
-//                handler.postDelayed(this, 10000);
-//            }
-//        });
-//    }
-//
-//    // END LOCATION SERVICE
-//
-//    // CHECK INTERNET CONNECTION
-//
-//    private void networkAvailabilityMessage() {
-//        if (!isConnected()){
-//            Toast toast = Toast.makeText(this, "No network available", Toast.LENGTH_SHORT);
-//            toast.show();
-//        } else {
-//            Toast toast = Toast.makeText(this, "You are connected", Toast.LENGTH_SHORT);
-//            toast.show();
-//        }
-//
-//    }
-//    private boolean isConnected() {
-//
-//        ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Activity.CONNECTIVITY_SERVICE);
-//        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
-//        if (networkInfo != null && networkInfo.isConnected()){
-//            return true;
-//        } else {
-//            return false;
-//        }
-//
-//
-//    }
-//
-//
-//    // GET  & HTTP HELPER METHODS
-//    public static String GET(String url){
-//        InputStream inputStream = null;
-//        String result = "";
-//        try {
-//            HttpClient httpclient = new DefaultHttpClient();
-//
-//            HttpResponse httpResponse = httpclient.execute(new HttpGet(url));
-//
-//            inputStream = httpResponse.getEntity().getContent();
-//
-//
-//            if (inputStream != null){
-//                result = convertInputStreamToString(inputStream);
-//                Log.d("InputStream","In GET result: " + result + "inputStream =  " + inputStream);
-//
-//            } else {
-//                result = "Did not work!";
-//            }
-//
-//
-//
-//
-//        } catch (Exception e) {
-//            Log.d("InputStream", e.getLocalizedMessage());
-//        }
-//
-//        return result;
-//    }
-//
-//    private static String convertInputStreamToString(InputStream inputStream){
-//        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-//        String line = "";
-//        String result = "";
-//
-//        Log.d("InputStream","In Input Stream" + inputStream);
-//
-//        try {
-//
-//            while ((line = bufferedReader.readLine()) != null){
-//                result += line;
-//            }
-//            inputStream.close();
-//
-//        } catch(Exception e) {
-//            Log.d("InputStream", e.getLocalizedMessage());
-//        }
-//
-//        return result;
-//
-//    }
-//
-//
-//    @Override
-//    protected void onStart() {
-//        super.onStart();
-//        Intent intent = new Intent(this, LocationService.class);
-//        bindService(intent, connection, Context.BIND_AUTO_CREATE);
-//    }
-//
-//    @Override
-//    protected void onStop() {
-//        super.onStop();
-//        Log.d("ONCREATE", "IN ON STOP");
-//
-//        if (bound) {
-//            unbindService(connection);
-//            bound = false;
-//        }
-//        resetMapApp();
-//    }
-//    @Override
-//    protected void onPause() {
-//        Log.d("ONCREATE", "IN ON PAUSE");
-//
-//        super.onPause();
-//        resetMapApp();
-//    }
-//
-//
-//    private void resetMapApp() {
-//        httpRequested = false;
-//        progressValue = 0;
-//        progressBarStatus = 0;
-//    }
-//
-//
-//
-//
-//    @Override
-//    public boolean onCreateOptionsMenu(Menu menu) {
-//        // Inflate the menu; this adds items to the action bar if it is present.
-//        getMenuInflater().inflate(R.menu.menu_map, menu);
-//        return true;
-//    }
-//
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        // Handle action bar item clicks here. The action bar will
-//        // automatically handle clicks on the Home/Up button, so long
-//        // as you specify a parent activity in AndroidManifest.xml.
-//        int id = item.getItemId();
-//
-//        //noinspection SimplifiableIfStatement
-//        if (id == R.id.action_settings) {
-//            return true;
-//        }
-//
-//        return super.onOptionsItemSelected(item);
-//    }
+
+
+
+
+    private void resetMapApp() {
+        httpRequested = false;
+        progressValue = 0;
+        progressBarStatus = 0;
+    }
+
+
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_map, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
 
 
 
