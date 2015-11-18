@@ -63,6 +63,7 @@ public class TrainColor {
             case "yellow":
             case "#fff200":
                 color = YELLOW;
+                break;
             case "purple":
             case "#522398":
                 color = PURPLE;

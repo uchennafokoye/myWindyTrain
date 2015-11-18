@@ -5,8 +5,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
-import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -19,16 +17,10 @@ import android.widget.LinearLayout;
 
 public class MainActivity extends Activity implements View.OnClickListener{
 
-    Location current_location;
+    LocationService.customLocation current_location;
     private LocationService locationService;
     private boolean bound = false;
     private boolean paused = false;
-
-    SharedPreferences sharedPreferences;
-    public static final String MyPREFERENCES = "MyPrefs";
-    public static final String CURRENT_LATITUDE = "CurrentLocationLatitude";
-    public static final String CURRENT_LONGITUDE = "CurrentLocationLongitude";
-
 
 
 
@@ -51,10 +43,9 @@ public class MainActivity extends Activity implements View.OnClickListener{
         Button any_train = (Button) findViewById(R.id.any_train_button);
         any_train.setOnClickListener(this);
 
-        sharedPreferences = getSharedPreferences(MyPREFERENCES, Context.MODE_PRIVATE);
-
-        Log.d("SHAREDPREFERENCES", "CURRENT LATITUDE: " + sharedPreferences.getFloat(MainActivity.CURRENT_LATITUDE, (float) 0.0));
-        Log.d("SHAREDPREFERENCES", "CURRENT LONGITUDE: " + sharedPreferences.getFloat(MainActivity.CURRENT_LONGITUDE, (float) 0.0));
+        Intent intent = getIntent();
+        current_location = (LocationService.customLocation) intent.getSerializableExtra(Map.SAVED_CURRENT_LOCATION);
+        Log.d("FROM_INTENT_MAIN", current_location + "");
 
         watchLocation();
 
@@ -84,10 +75,7 @@ public class MainActivity extends Activity implements View.OnClickListener{
             public void run() {
                 if (locationService != null) {
 
-                    current_location = locationService.getLocation();
-
-
-
+                    current_location = locationService.getLatLngLocation();
                     Log.d("current_location", current_location + "");
 
                 }
@@ -108,24 +96,8 @@ public class MainActivity extends Activity implements View.OnClickListener{
             intent.putExtra(Map.COLORMESSAGE, color);
         }
 
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-
-        Float savedLatitude;
-        Float savedLongitude;
-
-        if (current_location != null){
-            savedLatitude = (float) current_location.getLatitude();
-            savedLongitude = (float) current_location.getLongitude();
-        } else {
-            savedLatitude = (float) 0.0;
-            savedLongitude = (float) 0.0;
-        }
-
-        editor.putFloat(CURRENT_LATITUDE, savedLatitude);
-        editor.putFloat(CURRENT_LONGITUDE, savedLongitude);
-        editor.commit();
-
-
+        intent.putExtra(Map.SAVED_CURRENT_LOCATION, current_location);
+        Log.d("TRANSFER TO MAP", current_location + "");
 
         startActivity(intent);
 

@@ -5,9 +5,7 @@ import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -19,14 +17,11 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
@@ -52,9 +47,9 @@ import android.os.Handler;
 
 public class Map extends Activity {
 
-    SharedPreferences sharedPreferences;
 
     public static final String COLORMESSAGE = "message";
+    public static final String SAVED_CURRENT_LOCATION = "saved_current_location";
 
     private boolean paused = false;
 
@@ -75,8 +70,7 @@ public class Map extends Activity {
 
 
 
-
-    Location current_location;
+    LocationService.customLocation current_location;
     private LocationService locationService;
     private boolean bound = false;
 
@@ -84,25 +78,7 @@ public class Map extends Activity {
 
     public void goBack(View v) {
         Intent intent = new Intent(this, MainActivity.class);
-
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-
-        Float savedLatitude;
-        Float savedLongitude;
-
-        if (current_location != null){
-            savedLatitude = (float) current_location.getLatitude();
-            savedLongitude = (float) current_location.getLongitude();
-        } else {
-            savedLatitude = (float) 0.0;
-            savedLongitude = (float) 0.0;
-        }
-
-        editor.putFloat(MainActivity.CURRENT_LATITUDE, savedLatitude);
-        editor.putFloat(MainActivity.CURRENT_LONGITUDE, savedLongitude);
-        editor.commit();
-
-
+        intent.putExtra(SAVED_CURRENT_LOCATION, current_location);
         startActivity(intent);
     }
 
@@ -120,6 +96,8 @@ public class Map extends Activity {
         resetMapApp();
         Intent intent = getIntent();
         color = intent.getStringExtra(COLORMESSAGE);
+        current_location = (LocationService.customLocation) intent.getSerializableExtra(SAVED_CURRENT_LOCATION);
+        Log.d("INTENT_GET", current_location + "");
 
         TextView tvTrainLine = (TextView) findViewById(R.id.tv_search_criteria_info);
         if (color != null){
@@ -130,11 +108,6 @@ public class Map extends Activity {
             tvTrainLine.setText("Any Line");
             tvTrainLine.setTextColor(Color.WHITE);
         }
-
-        sharedPreferences = getSharedPreferences(MainActivity.MyPREFERENCES, Context.MODE_PRIVATE);
-
-        Log.d("SHAREDPREFERENCES", "CURRENT LATITUDE: " + sharedPreferences.getFloat(MainActivity.CURRENT_LATITUDE, (float) 0.0));
-        Log.d("SHAREDPREFERENCES", "CURRENT LONGITUDE: " + sharedPreferences.getFloat(MainActivity.CURRENT_LONGITUDE, (float) 0.0));
 
 
         initializeProgressDialog();
@@ -208,62 +181,64 @@ public class Map extends Activity {
 
             }
 
+            public int getProgressValue() {
+
+                if (googleMap == null){
+                    return 0;
+                }
+
+                if (locationService == null){
+                    return 10;
+                }
+
+                if (current_location == null){
+                    return 50;
+                }
+
+                if (!httpRequested) {
+                    return 70;
+                }
+
+                if (httpRequested & progressValue < 100) {
+                    return 99;
+                }
+
+                return 100;
+
+
+            }
+
+            public int nextProgressLevel(int progressValue) {
+
+                int nextProgressLevel = 0;
+                switch (progressValue){
+                    case 0:
+                        nextProgressLevel = 10;
+                        break;
+                    case 10:
+                        nextProgressLevel = 50;
+                        break;
+                    case 50:
+                        nextProgressLevel = 70;
+                        break;
+                    case 70:
+                        nextProgressLevel = 99;
+                        break;
+                    case 99:
+                        nextProgressLevel = 100;
+                        break;
+                    default:
+                        nextProgressLevel = 100;
+                        break;
+                }
+
+                return nextProgressLevel;
+            }
+
         }).start();
     }
 
-    public int getProgressValue() {
 
-        if (googleMap == null){
-            return 0;
-        }
-
-        if (locationService == null){
-            return 10;
-        }
-
-        if (current_location == null){
-            return 50;
-        }
-
-        if (!httpRequested) {
-            return 70;
-        }
-
-        if (httpRequested & progressValue < 100) {
-            return 99;
-        }
-
-        return 100;
-
-
-    }
-
-    public int nextProgressLevel(int progressValue) {
-
-        int nextProgressLevel = 0;
-        switch (progressValue){
-            case 0:
-                nextProgressLevel = 10;
-                break;
-            case 10:
-                nextProgressLevel = 50;
-                break;
-            case 50:
-                nextProgressLevel = 70;
-                break;
-            case 70:
-                nextProgressLevel = 99;
-                break;
-            case 99:
-                nextProgressLevel = 100;
-                break;
-            default:
-                nextProgressLevel = 100;
-                break;
-        }
-
-        return nextProgressLevel;
-    }
 
     @Override
     protected void onResume() {
@@ -317,14 +292,27 @@ public class Map extends Activity {
     }
 
 
-    //ATTEMPT TO CALL HTTP REQUEST
+    //DUMMY HTPP HELPER
     private void attemptHttpAsyncTask() {
+        String url = "https://mwtservice.herokuapp.com";
+        new HttpAsyncTask().execute(url);
+    }
 
-        if (current_location == null){
-            return;
-        }
 
-        if (!httpRequested){
+
+    private class HttpAsyncTask extends AsyncTask<String, Void, String>{
+        @Override
+        protected String doInBackground(String... colors){
+
+            while (current_location == null){
+                try {
+                    Thread.sleep(1000);
+
+                } catch(InterruptedException e){
+                    e.printStackTrace();
+                }
+
+            }
 
             String query_string = "/closest/" + current_location.getLatitude() + "/" + current_location.getLongitude();
 
@@ -334,17 +322,7 @@ public class Map extends Activity {
 
             String url = "https://mwtservice.herokuapp.com" + query_string;
             Log.d("URL", url);
-            new HttpAsyncTask().execute(url);
-
-        }
-    }
-
-
-
-    private class HttpAsyncTask extends AsyncTask<String, Void, String>{
-        @Override
-        protected String doInBackground(String... urls){
-            return GET(urls[0]);
+            return GET(url);
         }
 
         @Override
@@ -359,9 +337,6 @@ public class Map extends Activity {
                 JSONArray listOfTrains = closest_station.getJSONArray("trains");
                 trainsAtStation = "Trains At Station: " + listOfTrains.join(",");
                 httpRequested = true;
-
-                Toast toast = Toast.makeText(getBaseContext(), "Found closest train station! " + station_name, Toast.LENGTH_SHORT);
-                toast.show();
 
                 drawDirections();
 
@@ -413,7 +388,6 @@ public class Map extends Activity {
 
     private void drawCurrentLocation(LatLng current_location) {
 
-
         googleMap.addMarker(new MarkerOptions().position(current_location).title("Current Position").flat(true).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
 
         if (firstTimeCameraMove){
@@ -456,7 +430,17 @@ public class Map extends Activity {
             public void run() {
                 if (locationService != null) {
 
-                    current_location = locationService.getLocation();
+                    while (locationService.getLatLngLocation() == null){
+
+                        try {
+                            Thread.sleep(1000);
+                        } catch(InterruptedException e){
+                            Log.d("WATCH_LOCATION", "Sleep interrupted");
+                        }
+
+                    }
+
+                    current_location = locationService.getLatLngLocation();
 
                     Log.d("current_location", current_location + "");
                     Log.d("httpRequested", httpRequested.toString());

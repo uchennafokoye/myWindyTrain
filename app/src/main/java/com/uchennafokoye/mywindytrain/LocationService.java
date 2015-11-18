@@ -12,6 +12,8 @@ import android.location.LocationManager;
 import android.location.LocationListener;
 import android.util.Log;
 
+import java.io.Serializable;
+
 
 public class LocationService extends Service {
 
@@ -19,6 +21,8 @@ public class LocationService extends Service {
     private static Location location = null;
     private static Location last_location = null;
     private static Location last_location_since_last_checked = null;
+
+    private static customLocation custom_location = null;
 
 
     public LocationService() {
@@ -31,7 +35,8 @@ public class LocationService extends Service {
             public void onLocationChanged(Location current_location){
                 last_location = location;
                 location = current_location;
-                Log.d("PermissionGPS", "Location Changed " + location);
+                custom_location = new customLocation(current_location.getLatitude(), current_location.getLongitude());
+                Log.d("PermissionGPS", "Location Changed " + custom_location);
 
             }
 
@@ -58,10 +63,10 @@ public class LocationService extends Service {
             Criteria criteria = new Criteria();
             String bestProvider = locManager.getBestProvider(criteria, true);
             location = locManager.getLastKnownLocation(bestProvider);
+            if (location != null){
+                custom_location = new customLocation(location.getLatitude(), location.getLongitude());
+            }
             locManager.requestLocationUpdates(bestProvider, min_sec, min_distance, listener);
-
-            Log.d("current_location", location + "");
-            Log.d("PermissionGPS", "Security Exception None");
 
         } catch (SecurityException e){
             Log.d("PermissionGPS", "Security Exception");
@@ -80,6 +85,8 @@ public class LocationService extends Service {
         return LocationService.location;
     }
 
+    public customLocation getLatLngLocation() { return custom_location; }
+
     public Boolean locationChangedSinceLastChecked() {
 
         Boolean location_changed = location != last_location_since_last_checked;
@@ -93,11 +100,10 @@ public class LocationService extends Service {
 
     public Float distanceTraveled() {
         if (last_location == null){
-            Log.d("Distance traveled", 0.0 + "");
             return (float) 0.0;
         } else {
             Log.d("Distance traveled", location.distanceTo(last_location) + " ");
-            return location.distanceTo(last_location);
+            return location.distanceTo(last_location) / 1000;
 
         }
     }
@@ -112,5 +118,32 @@ public class LocationService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return binder;
+    }
+
+
+    public static class customLocation implements Serializable {
+        private final double latitude;
+        private final double longitude;
+
+        public customLocation(double latitude, double longitude) {
+            this.latitude = latitude;
+            this.longitude = longitude;
+        }
+
+
+        public double getLatitude() {
+            return this.latitude;
+        }
+
+        public double getLongitude(){
+            return this.longitude;
+        }
+
+        @Override
+        public String toString() {
+            return this.latitude + " " + this.longitude;
+        }
+
+
     }
 }
