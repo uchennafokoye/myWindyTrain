@@ -19,4 +19,5 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="title_activity_train_detail_view">TrainDetailView</string>
     <string name="title_activity_map">Map</string>
+    <string name="title_activity_my_preference">MyPreferenceActivity</string>
 </resources>

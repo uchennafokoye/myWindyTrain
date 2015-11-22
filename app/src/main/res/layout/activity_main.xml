@@ -8,6 +8,14 @@
         android:gravity="center_horizontal"
         android:layout_alignParentTop="true">
 
+
+    <fragment
+        android:id="@+id/settings_icon_frag"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="right"
+        class="com.uchennafokoye.mywindytrain.SettingsIconFragment"/>
+
         <ImageView
             android:id="@+id/app_logo"
             android:layout_width="@dimen/image_size"

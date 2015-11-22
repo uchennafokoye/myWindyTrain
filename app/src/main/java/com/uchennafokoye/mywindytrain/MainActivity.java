@@ -189,6 +189,26 @@ public class MainActivity extends Activity implements View.OnClickListener{
             public void run() {
                 if (locationService != null) {
 
+                    while (locationService.getLatLngLocation() == null){
+                        Log.d("WATCH_LOCATION", "Location is null");
+
+                        try {
+                            Thread.sleep(1000);
+                        } catch(InterruptedException e){
+                            Log.d("WATCH_LOCATION", "Sleep interrupted");
+                        }
+
+                    }
+
+
+                    // To make sure we get accurate location
+                    try {
+                        Thread.sleep(3000);
+                    } catch(InterruptedException e){
+                        Log.d("WATCH_LOCATION", "Sleep interrupted");
+                    }
+
+
                     current_location = locationService.getLatLngLocation();
                     Log.d("current_location", current_location + "");
 
