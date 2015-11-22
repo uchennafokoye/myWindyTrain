@@ -1,6 +1,7 @@
 package com.uchennafokoye.mywindytrain;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -23,12 +24,125 @@ public class MainActivity extends Activity implements View.OnClickListener{
     private boolean paused = false;
 
 
+    ProgressDialog progressDialog;
+    private int progressBarStatus;
+    private Handler progressBarHandler = new Handler();
+
+
+
+
+//    private void initializeProgressDialog() {
+//        progressDialog = new ProgressDialog(this);
+//        progressDialog.setCancelable(true);
+//        progressDialog.setMessage("Loading Closest Location");
+//        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+//        progressDialog.setProgress(0);
+//        progressDialog.setMax(100);
+//        progressDialog.show();
+//
+//        progressBarStatus = 0;
+//
+//        new Thread(new Runnable() {
+//            private int progressValueAnimatable = 0;
+//
+//            public void run() {
+//
+//                while (progressBarStatus < 100) {
+//
+//                    int currentProgressValue = getProgressValue();
+//                    if (progressValueAnimatable >= currentProgressValue){
+//                        if ((progressValueAnimatable + 10) < nextProgressLevel(currentProgressValue)) {
+//                            progressValueAnimatable += 10;
+//
+//                        }
+//                    } else {
+//                        progressValueAnimatable = getProgressValue();
+//                    }
+//
+//                    progressBarStatus = progressValueAnimatable;
+//                    Log.d("ProgressValue", progressBarStatus + "");
+//
+//                    try {
+//                        Thread.sleep(1000);
+//
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//
+//                    progressBarHandler.post(new Runnable() {
+//                        public void run() {
+//                            progressDialog.setProgress(progressBarStatus);
+//                        }
+//                    });
+//
+//
+//                }
+//
+//                if (progressBarStatus >= 100){
+//                    try {
+//                        Thread.sleep(1000);
+//
+//                    } catch(InterruptedException e){
+//                        e.printStackTrace();
+//                    }
+//
+//                    progressDialog.dismiss();
+//
+//                }
+//
+//            }
+//
+//            public int getProgressValue() {
+//
+//                if (current_location == null){
+//                    return 50;
+//                }
+//
+//                return 100;
+//
+//            }
+//
+//            public int nextProgressLevel(int progressValue) {
+//
+//                int nextProgressLevel;
+//                switch (progressValue){
+//                    case 0:
+//                        nextProgressLevel = 10;
+//                        break;
+//                    case 10:
+//                        nextProgressLevel = 50;
+//                        break;
+//                    case 50:
+//                        nextProgressLevel = 70;
+//                        break;
+//                    case 70:
+//                        nextProgressLevel = 99;
+//                        break;
+//                    case 99:
+//                        nextProgressLevel = 100;
+//                        break;
+//                    default:
+//                        nextProgressLevel = 100;
+//                        break;
+//                }
+//
+//                return nextProgressLevel;
+//            }
+//
+//        }).start();
+//    }
+
+
+
+
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Intent intent = new Intent(this, LocationService.class);
+        bindService(intent, connection, Context.BIND_AUTO_CREATE);
         init();
     }
 
@@ -48,7 +162,7 @@ public class MainActivity extends Activity implements View.OnClickListener{
         Log.d("FROM_INTENT_MAIN", current_location + "");
 
         watchLocation();
-
+//        initializeProgressDialog();
 
     }
 
@@ -119,8 +233,6 @@ public class MainActivity extends Activity implements View.OnClickListener{
     @Override
     protected void onStart() {
         super.onStart();
-        Intent intent = new Intent(this, LocationService.class);
-        bindService(intent, connection, Context.BIND_AUTO_CREATE);
         paused = false;
     }
 

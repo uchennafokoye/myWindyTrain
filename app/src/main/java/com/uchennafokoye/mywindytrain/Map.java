@@ -14,6 +14,8 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -38,6 +40,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import android.content.ServiceConnection;
 import android.os.IBinder;
@@ -45,7 +48,7 @@ import android.os.Handler;
 
 
 
-public class Map extends Activity {
+public class Map extends Activity implements AdapterView.OnItemSelectedListener {
 
 
     public static final String COLORMESSAGE = "message";
@@ -76,6 +79,14 @@ public class Map extends Activity {
 
     private Boolean firstTimeCameraMove = true;
 
+    Spinner colorSpinner;
+    private CustomAdapterSpinner arrayAdapter;
+
+    TextView tvTrainLine;
+
+    HashMap<String, JSONObject> cachedJSONHash = new HashMap<>();
+
+
     public void goBack(View v) {
         Intent intent = new Intent(this, MainActivity.class);
         intent.putExtra(SAVED_CURRENT_LOCATION, current_location);
@@ -99,7 +110,28 @@ public class Map extends Activity {
         current_location = (LocationService.customLocation) intent.getSerializableExtra(SAVED_CURRENT_LOCATION);
         Log.d("INTENT_GET", current_location + "");
 
-        TextView tvTrainLine = (TextView) findViewById(R.id.tv_search_criteria_info);
+        tvTrainLine = (TextView) findViewById(R.id.tv_search_criteria_info);
+        setColorTVText();
+
+        /* Color Spinner */
+        colorSpinner = (Spinner) findViewById(R.id.color_spinner);
+        arrayAdapter = new CustomAdapterSpinner(this, android.R.layout.simple_spinner_dropdown_item);
+        colorSpinner.setAdapter(arrayAdapter);
+        colorSpinner.setOnItemSelectedListener(this);
+
+
+        httpRequested = false;
+
+        initializeProgressDialog();
+        setUpMapIfNeeded();
+        networkAvailabilityMessage();
+        new HttpAsyncTask().execute();
+        watchLocation();
+
+    }
+
+
+    private void setColorTVText() {
         if (color != null){
             tvTrainLine.setText(Character.toUpperCase(color.charAt(0)) + color.substring(1) + " Line" );
             TrainColor mycolor = new TrainColor(color);
@@ -108,17 +140,7 @@ public class Map extends Activity {
             tvTrainLine.setText("Any Line");
             tvTrainLine.setTextColor(Color.WHITE);
         }
-
-
-        initializeProgressDialog();
-        setUpMapIfNeeded();
-        networkAvailabilityMessage();
-        attemptHttpAsyncTask();
-        watchLocation();
-
     }
-
-
 
     private void initializeProgressDialog() {
         progressDialog = new ProgressDialog(this);
@@ -210,7 +232,7 @@ public class Map extends Activity {
 
             public int nextProgressLevel(int progressValue) {
 
-                int nextProgressLevel = 0;
+                int nextProgressLevel;
                 switch (progressValue){
                     case 0:
                         nextProgressLevel = 10;
@@ -292,12 +314,75 @@ public class Map extends Activity {
     }
 
 
-    //DUMMY HTPP HELPER
-    private void attemptHttpAsyncTask() {
-        String url = "https://mwtservice.herokuapp.com";
-        new HttpAsyncTask().execute(url);
+
+
+    @Override
+    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+
+        String[] colorArray = TrainColor.TRAIN_COLORS_ARRAY;
+        if (position < 0 || position >= colorArray.length) {
+            return;
+        }
+
+
+        String trainColor = colorArray[position];
+        color = (trainColor.equals("Any")) ? null : trainColor;
+
+        if (cachedJSONHash.size() != 0) {
+            JSONObject closest_station = cachedJSONHash.get(trainColor);
+            parseJSON(closest_station);
+            drawDirections();
+        }
+
+        if (locationService.distanceTraveled() > 0.5) {
+            httpRequested = false;
+            progressValue = 0;
+            initializeProgressDialog();
+            new HttpAsyncTask().execute();
+        }
+
+        setColorTVText();
+
+
+
     }
 
+    @Override
+    public void onNothingSelected(AdapterView<?> parent) {
+
+    }
+
+    private class cachedMWTService extends AsyncTask<Void, Void, String>{
+        @Override
+        protected String doInBackground(Void... params){
+            Log.d("Thread_ID", "Thread name: " + Thread.currentThread().getName() + " Thread ID;" + Thread.currentThread().getId());
+
+            while (current_location == null){
+                try { Thread.sleep(1000); }
+                catch(InterruptedException e)
+                { e.printStackTrace(); }
+            }
+
+            String query_string = "/closest/all/" + current_location.getLatitude() + "/" + current_location.getLongitude();
+            String url = "https://mwtservice.herokuapp.com" + query_string;
+            Log.d("URL", url); return GET(url);
+        }
+
+        @Override
+        protected void onPostExecute(String result){
+            try {
+                JSONObject closest_stations = new JSONObject(result);
+                String[] trainColorArray = TrainColor.TRAIN_COLORS_ARRAY;
+                for (String trainColor : trainColorArray) {
+                    JSONObject cachedJSON = closest_stations.getJSONObject(trainColor);
+
+                    cachedJSONHash.put(trainColor, cachedJSON);
+                }
+                Log.d("CACHEDJSON", cachedJSONHash.toString());
+            }
+            catch(JSONException e) { Log.d("JSON", e.getLocalizedMessage()); }
+        }
+    }
 
 
     private class HttpAsyncTask extends AsyncTask<String, Void, String>{
@@ -331,11 +416,7 @@ public class Map extends Activity {
             try {
                 JSONObject closest_station = new JSONObject(result);
 
-                to_latitude = closest_station.getDouble("latitude");
-                to_longitude = closest_station.getDouble("longitude");
-                station_name = closest_station.getString("name");
-                JSONArray listOfTrains = closest_station.getJSONArray("trains");
-                trainsAtStation = "Trains At Station: " + listOfTrains.join(",");
+                parseJSON(closest_station);
                 httpRequested = true;
 
                 drawDirections();
@@ -346,7 +427,25 @@ public class Map extends Activity {
                 Log.d("JSON", e.getLocalizedMessage());
             }
 
+            cachedMWTService task = new cachedMWTService();
+            task.execute();
 
+
+        }
+    }
+
+    // PARSE JSON
+    private void parseJSON(JSONObject closest_station) {
+
+        try {
+
+            to_latitude = closest_station.getDouble("latitude");
+            to_longitude = closest_station.getDouble("longitude");
+            station_name = closest_station.getString("name");
+            JSONArray listOfTrains = closest_station.getJSONArray("trains");
+            trainsAtStation = "Trains At Station: " + listOfTrains.join(",");
+        }
+        catch (JSONException e) { e.printStackTrace();
         }
     }
 
@@ -442,26 +541,6 @@ public class Map extends Activity {
 
                     current_location = locationService.getLatLngLocation();
 
-                    Log.d("current_location", current_location + "");
-                    Log.d("httpRequested", httpRequested.toString());
-
-                    if (!httpRequested){
-                        attemptHttpAsyncTask();
-                    }
-
-
-                    if (locationService.locationChangedSinceLastChecked()){
-                        if (locationService.distanceTraveled() > 2){
-                            initializeProgressDialog();
-                            httpRequested = false;
-                            progressValue = 0;
-                            attemptHttpAsyncTask();
-                        } else {
-                            drawDirections();
-                        }
-
-                    }
-
                 }
 
                 if (!paused) handler.postDelayed(this, 10000);
@@ -487,11 +566,7 @@ public class Map extends Activity {
 
         ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Activity.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
-        if (networkInfo != null && networkInfo.isConnected()){
-            return true;
-        } else {
-            return false;
-        }
+        return networkInfo != null && networkInfo.isConnected();
 
 
     }
@@ -499,7 +574,7 @@ public class Map extends Activity {
 
     // GET  & HTTP HELPER METHODS
     public static String GET(String url){
-        InputStream inputStream = null;
+        InputStream inputStream;
         String result = "";
         try {
             HttpClient httpclient = new DefaultHttpClient();
@@ -529,7 +604,7 @@ public class Map extends Activity {
 
     private static String convertInputStreamToString(InputStream inputStream){
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-        String line = "";
+        String line;
         String result = "";
 
         Log.d("InputStream", "In Input Stream" + inputStream);
@@ -554,7 +629,6 @@ public class Map extends Activity {
 
 
     private void resetMapApp() {
-        httpRequested = false;
         progressValue = 0;
         progressBarStatus = 0;
     }
