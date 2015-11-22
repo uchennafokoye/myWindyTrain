@@ -97,18 +97,7 @@ public class LocationService extends Service {
         return location_changed;
     }
 
-//
-//    public Float distanceTraveled() {
-//        if (last_location == null){
-//            return (float) 0.0;
-//        } else {
-//            Log.d("Distance traveled", location.distanceTo(last_location) + " ");
-//            return location.distanceTo(last_location) / 1000;
-//
-//        }
-//    }
-
-    public Float distanceTraveled(customLocation current_location, customLocation last_location) {
+    public static Float distanceTraveled(customLocation current_location, customLocation last_location) {
 
         if (current_location == null || last_location == null) { return (float) 0.0; }
 

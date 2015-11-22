@@ -25,6 +25,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
@@ -74,6 +75,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
     LocationService.customLocation current_location;
     LocationService.customLocation last_used_location;
+    Marker cLMarker;
 
     private LocationService locationService;
     private boolean bound = false;
@@ -491,13 +493,23 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
     private void drawCurrentLocation(LatLng current_location) {
 
-        googleMap.addMarker(new MarkerOptions().position(current_location).title("Current Position").flat(true).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
+        if (cLMarker != null) {
+            cLMarker.remove();
+        }
+
+        cLMarker = googleMap.addMarker(new MarkerOptions().position(current_location).title("Current Position").flat(true).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
 
         if (firstTimeCameraMove){
             googleMap.moveCamera(CameraUpdateFactory.newLatLng(current_location));
             firstTimeCameraMove = false;
         }
 
+    }
+
+    private void drawCurrentLocation(LocationService.customLocation current_location){
+        if (current_location == null) { return; }
+        drawCurrentLocation(new LatLng(current_location.getLatitude(), current_location.getLongitude()));
+        return;
     }
 
 
@@ -544,6 +556,14 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
                     }
 
                     current_location = locationService.getLatLngLocation();
+
+//                    if (current_location != null && httpRequested){
+//                        drawCurrentLocation(current_location);
+//                    }
+
+                    if (LocationService.distanceTraveled(current_location, last_used_location) >= 0.01){
+                        drawDirections();
+                    }
 
                 }
 
