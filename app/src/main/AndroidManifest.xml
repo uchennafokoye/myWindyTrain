@@ -25,14 +25,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".FindByProximityAndTime"
-            android:label="@string/title_activity_find_by_proximity_and_time" >
-        </activity>
-        <activity
-            android:name=".TrainDetailView"
-            android:label="@string/title_activity_train_detail_view" >
-        </activity>
-        <activity
             android:name=".Map"
             android:label="@string/title_activity_map" >
         </activity>
