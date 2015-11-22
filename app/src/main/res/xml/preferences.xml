@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="Direction Updates">
+
+        <CheckBoxPreference android:title="Get direction updates while moving"
+            android:defaultValue="false"
+            android:summary="This would update your current position and directions on the map while moving."
+            android:key="directionUpdates"
+            android:disableDependentsState="false"
+            />
+
+        <EditTextPreference android:title="Update how often? (In KM)"
+            android:defaultValue="0.5"
+            android:key="howOften"
+            android:summary="In KM | Default is 0.5 km"
+            android:dependency="directionUpdates"
+            android:inputType="number"
+            />
+
+
+    </PreferenceCategory>
+
+
+</PreferenceScreen>
