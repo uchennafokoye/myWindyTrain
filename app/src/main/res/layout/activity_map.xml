@@ -36,27 +36,49 @@
             android:textColor="@color/white"
             />
 
-        <TextView
+        <RelativeLayout
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:id="@+id/tv_search_criteria_info"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="@dimen/train_block_section_margin"
-            android:text="Green Line"
-            android:textStyle="bold"
-            android:textColor="@color/green"
+            android:layout_height="match_parent"
             android:layout_marginTop="@dimen/abc_action_bar_content_inset_material"
             android:layout_marginBottom="@dimen/abc_action_bar_content_inset_material"
+>
 
-            />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/tv_search_criteria_info"
+                android:text="Green Line"
+                android:textStyle="bold"
+                android:textColor="@color/green"
 
-        <Spinner
-            android:id="@+id/color_spinner"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+                />
+
+
+
+                <Spinner
+                    android:id="@+id/color_spinner"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_toRightOf="@id/tv_search_criteria_info"
+                    android:layout_marginLeft="@dimen/abc_button_padding_horizontal_material"
+
+
+                    >
+                </Spinner>
+
+
+
+
+        </RelativeLayout>
+
+        <fragment
+            android:id="@+id/settings_icon_frag"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
-            >
-        </Spinner>
+            class="com.uchennafokoye.mywindytrain.SettingsIconFragment"/>
+
 
 
     </LinearLayout>

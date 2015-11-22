@@ -5,12 +5,14 @@ import android.app.ProgressDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -80,6 +82,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     private LocationService locationService;
     private boolean bound = false;
 
+
     private Boolean firstTimeCameraMove = true;
 
     Spinner colorSpinner;
@@ -89,6 +92,10 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
     HashMap<String, JSONObject> cachedJSONHash = new HashMap<>();
 
+
+    SharedPreferences SP;
+    boolean bDirUpdates;
+    Double howOften;
 
     public void goBack(View v) {
         Intent intent = new Intent(this, MainActivity.class);
@@ -107,6 +114,9 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     }
 
     private void init() {
+
+        updatePreferences();
+
         resetMapApp();
         Intent intent = getIntent();
         color = intent.getStringExtra(COLORMESSAGE);
@@ -264,12 +274,26 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     }
 
 
+    private void updatePreferences() {
+
+        SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        bDirUpdates = SP.getBoolean("directionUpdates", false);
+        String hOften = SP.getString("howOften", "0.5");
+
+        try {
+            howOften = Double.parseDouble(hOften);
+        } catch(NumberFormatException e){
+            e.printStackTrace();
+        }
+
+    }
 
     @Override
     protected void onResume() {
         super.onResume();
         Log.d("ONCREATE", "IN ON RESUME");
 
+        updatePreferences();
         setUpMapIfNeeded();
         resetMapApp();
         paused = false;
@@ -332,6 +356,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
         String trainColor = colorArray[position];
         color = (trainColor.equals("Any")) ? null : trainColor;
+        firstTimeCameraMove = true;
 
         if (cachedJSONHash.size() != 0) {
             JSONObject closest_station = cachedJSONHash.get(trainColor);
@@ -509,7 +534,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     private void drawCurrentLocation(LocationService.customLocation current_location){
         if (current_location == null) { return; }
         drawCurrentLocation(new LatLng(current_location.getLatitude(), current_location.getLongitude()));
-        return;
     }
 
 
@@ -546,6 +570,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
                 if (locationService != null) {
 
                     while (locationService.getLatLngLocation() == null){
+                        Log.d("WATCH_LOCATION", "Location is null");
 
                         try {
                             Thread.sleep(1000);
@@ -555,15 +580,30 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
                     }
 
+
+                    // To make sure we get accurate location
+                    try {
+                        Thread.sleep(3000);
+                    } catch(InterruptedException e){
+                        Log.d("WATCH_LOCATION", "Sleep interrupted");
+                    }
+
                     current_location = locationService.getLatLngLocation();
 
-//                    if (current_location != null && httpRequested){
-//                        drawCurrentLocation(current_location);
-//                    }
 
-                    if (LocationService.distanceTraveled(current_location, last_used_location) >= 0.01){
-                        drawDirections();
+
+                    if (bDirUpdates){
+                        Log.d("UPDATE DIRECTIONS", "true");
+                        Double asOften = (howOften <= 0.0 || howOften == null) ? 0.5 : howOften;
+                        Log.d("howOften", Double.toString(asOften));
+                        if (LocationService.distanceTraveled(current_location, last_used_location) >= asOften){
+                            drawDirections();
+                        }
+                    } else {
+                        Log.d("UPDATE DIRECTIONS", "false");
+
                     }
+
 
                 }
 
