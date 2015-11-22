@@ -97,15 +97,31 @@ public class LocationService extends Service {
         return location_changed;
     }
 
+//
+//    public Float distanceTraveled() {
+//        if (last_location == null){
+//            return (float) 0.0;
+//        } else {
+//            Log.d("Distance traveled", location.distanceTo(last_location) + " ");
+//            return location.distanceTo(last_location) / 1000;
+//
+//        }
+//    }
 
-    public Float distanceTraveled() {
-        if (last_location == null){
-            return (float) 0.0;
-        } else {
-            Log.d("Distance traveled", location.distanceTo(last_location) + " ");
-            return location.distanceTo(last_location) / 1000;
+    public Float distanceTraveled(customLocation current_location, customLocation last_location) {
 
-        }
+        if (current_location == null || last_location == null) { return (float) 0.0; }
+
+        Location mcLocation = new Location(location);
+        mcLocation.setLongitude(current_location.getLongitude());
+        mcLocation.setLatitude(current_location.getLatitude());
+
+        Location mlLocation = new Location(location);
+        mlLocation.setLongitude(last_location.getLongitude());
+        mlLocation.setLatitude(last_location.getLatitude());
+
+        return (mcLocation.distanceTo(mlLocation) / 1000);
+
     }
     public class LocationBinder extends Binder {
 

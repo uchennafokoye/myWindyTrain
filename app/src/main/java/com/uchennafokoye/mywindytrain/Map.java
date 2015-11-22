@@ -6,6 +6,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -71,9 +72,9 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     String color;
     static Boolean httpRequested;
 
-
-
     LocationService.customLocation current_location;
+    LocationService.customLocation last_used_location;
+
     private LocationService locationService;
     private boolean bound = false;
 
@@ -324,6 +325,8 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
             return;
         }
 
+        if (!httpRequested || current_location == null) { return; }
+
 
         String trainColor = colorArray[position];
         color = (trainColor.equals("Any")) ? null : trainColor;
@@ -334,7 +337,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
             drawDirections();
         }
 
-        if (locationService.distanceTraveled() > 0.5) {
+        if (locationService.distanceTraveled(current_location, last_used_location) > 0.5) {
             httpRequested = false;
             progressValue = 0;
             initializeProgressDialog();
@@ -399,6 +402,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
             }
 
+            last_used_location = current_location;
             String query_string = "/closest/" + current_location.getLatitude() + "/" + current_location.getLongitude();
 
             if (color != null) {
