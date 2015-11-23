@@ -19,9 +19,7 @@ public class LocationService extends Service {
 
     private final IBinder binder = new LocationBinder();
     private static Location location = null;
-    private static Location last_location = null;
     private static Location last_location_since_last_checked = null;
-
     private static customLocation custom_location = null;
 
 
@@ -33,7 +31,6 @@ public class LocationService extends Service {
         LocationListener listener = new LocationListener() {
             @Override
             public void onLocationChanged(Location current_location){
-                last_location = location;
                 location = current_location;
                 custom_location = new customLocation(current_location.getLatitude(), current_location.getLongitude());
                 Log.d("PermissionGPS", "Location Changed " + custom_location);

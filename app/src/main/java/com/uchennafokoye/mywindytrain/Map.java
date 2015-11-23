@@ -2,12 +2,13 @@ package com.uchennafokoye.mywindytrain;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -29,7 +30,6 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import org.apache.http.HttpResponse;
@@ -59,6 +59,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     public static final String COLORMESSAGE = "message";
     public static final String SAVED_CURRENT_LOCATION = "saved_current_location";
 
+    private Object mPauseLock;
     private boolean paused = false;
 
     ProgressDialog progressDialog;
@@ -85,16 +86,14 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     LocationService.customLocation last_used_location;
     Marker cLMarker;
 
-    private LocationService locationService;
-    private boolean bound = false;
-
 
     private Boolean firstTimeCameraMove = true;
 
     Spinner colorSpinner;
     private CustomAdapterSpinner arrayAdapter;
-
     TextView tvTrainLine;
+
+    Boolean dataConnected;
 
     HashMap<String, JSONObject> cachedJSONHash = new HashMap<>();
 
@@ -103,6 +102,8 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     boolean bDirUpdates;
     Double howOften;
 
+    private LocationService locationService;
+    private boolean bound = false;
     private ServiceConnection connection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder binder){
@@ -115,6 +116,42 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
             bound = false;
         }
     };
+
+    boolean mIsReceiverRegistered = false;
+    NetworkChangeBR mReceiver = null;
+
+    private class NetworkChangeBR extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent){
+
+            dataConnected = isConnected();
+            networkAvailabilityMessage();
+            if (dataConnected){
+                continueHttpRequests();
+            }
+            debugIntent(intent, "grokkingandroid");
+
+        }
+
+        private void debugIntent(Intent intent, String tag) {
+            Log.v(tag, "action: " + intent.getAction());
+            Log.v(tag, "component: " + intent.getComponent());
+            Bundle extras = intent.getExtras();
+            if (extras != null) {
+                for (String key: extras.keySet()) {
+                    Log.v(tag, "key [" + key + "]: " +
+                            extras.get(key));
+
+                    Log.v(tag, extras.get(key).getClass().toString());
+                }
+            }
+            else {
+                Log.v(tag, "no extras");
+            }
+        }
+
+    }
 
     public void goBack(View v) {
         Intent intent = new Intent(this, MainActivity.class);
@@ -134,12 +171,13 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
     private void init() {
 
-        updatePreferences();
-
         progressValue = 0;
         progressBarStatus = 0;
-
         progressDialog = new ProgressDialog(this);
+        progressDialog.setCancelable(false);
+        progressDialog.setMessage("Loading Closest Location");
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        progressDialog.setMax(100);
 
 
         Intent intent = getIntent();
@@ -156,15 +194,25 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
         colorSpinner.setAdapter(arrayAdapter);
         colorSpinner.setOnItemSelectedListener(this);
 
-
         httpRequested = false;
 
 
         setUpMapIfNeeded();
-        initializeProgressDialog();
-        networkAvailabilityMessage();
-        new HttpAsyncTask().execute();
 
+
+    }
+
+    private void continueHttpRequests() {
+
+        if (dataConnected){
+
+            if (!httpRequested) {
+                initializeProgressDialog();
+                new HttpAsyncTask().execute();
+            } else {
+                drawDirections();
+            }
+        }
 
     }
 
@@ -181,13 +229,8 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     }
 
     private void initializeProgressDialog() {
-        progressDialog.setCancelable(false);
-        progressDialog.setMessage("Loading Closest Location");
-        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         progressDialog.setProgress(0);
-        progressDialog.setMax(100);
         progressDialog.show();
-
         progressBarStatus = 0;
 
         new Thread(new Runnable() {
@@ -195,7 +238,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
             public void run() {
 
-                while (progressBarStatus < 100) {
+                while (progressBarStatus < 100 && !paused) {
 
                     int currentProgressValue = getProgressValue();
                     if (progressValueAnimatable >= currentProgressValue){
@@ -319,16 +362,42 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
         updatePreferences();
         handler.post(watchLocation);
         paused = false;
+        dataConnected = isConnected();
+        // sets pause or unpause based on availability
+        networkAvailabilityMessage();
+
+        if (dataConnected){
+           continueHttpRequests();
+        }
+
+
+        /* BroadcastReceiver
+
+         */
+
+        if (!mIsReceiverRegistered){
+            if (mReceiver == null) mReceiver = new NetworkChangeBR();
+
+            registerReceiver(mReceiver, new IntentFilter("android.net.conn.CONNECTIVITY_CHANGE"));
+            registerReceiver(mReceiver, new IntentFilter("android.net.wifi.WIFI_STATE_CHANGED"));
+            mIsReceiverRegistered = true;
+        }
 
 
     }
 
     @Override
-    protected void onPause() {
-        Log.d("ONCREATE", "IN ON PAUSE");
-        super.onPause();
+    protected void onPause () {
+            Log.d("ONCREATE", "IN ON PAUSE");
+            super.onPause();
         handler.removeCallbacks(watchLocation);
         paused = true;
+
+        if (mIsReceiverRegistered){
+            unregisterReceiver(mReceiver);
+            mReceiver = null;
+            mIsReceiverRegistered = false;
+        }
     }
 
     @Override
@@ -382,14 +451,22 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
         if (cachedJSONHash.size() != 0) {
             JSONObject closest_station = cachedJSONHash.get(trainColor);
             parseJSON(closest_station);
-            drawDirections();
+            if (dataConnected){
+                drawDirections();
+            } else {
+                noDataMessage();
+            }
         }
 
         if (locationService.distanceTraveled(current_location, last_used_location) > 0.5) {
             httpRequested = false;
-            progressValue = 0;
-            initializeProgressDialog();
-            new HttpAsyncTask().execute();
+            if (dataConnected){
+                progressValue = 0;
+                initializeProgressDialog();
+                new HttpAsyncTask().execute();
+            } else {
+                noDataMessage();
+            }
         }
 
         setColorTVText();
@@ -470,8 +547,11 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
                 parseJSON(closest_station);
                 httpRequested = true;
-
-                drawDirections();
+                if (dataConnected){
+                    drawDirections();
+                } else {
+                    noDataMessage();
+                }
 
                 Log.d("current_location", current_location + "");
 
@@ -479,8 +559,11 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
                 Log.d("JSON", e.getLocalizedMessage());
             }
 
-            cachedMWTService task = new cachedMWTService();
-            task.execute();
+            if (dataConnected){
+                cachedMWTService task = new cachedMWTService();
+                task.execute();
+            }
+
 
 
         }
@@ -507,8 +590,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     private void drawDirections() {
 
         googleMap.clear();
-
-
         if (current_location == null || !httpRequested) return;
 
         LatLng fromPosition = new LatLng(current_location.getLatitude(), current_location.getLongitude());
@@ -560,8 +641,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     }
 
     private void updateMapBar(Document doc){
-
-
         TextView distancetv = (TextView) findViewById(R.id.tv_station_info_distance);
         TextView durationtv = (TextView) findViewById(R.id.tv_station_info_duration);
         TextView stationNametv = (TextView) findViewById(R.id.tv_station_info_name);
@@ -580,8 +659,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
                 if (locationService != null) {
 
                     current_location = locationService.getLatLngLocation();
-
-
                     if (current_location != null) {
 
                         if (bDirUpdates) {
@@ -589,7 +666,9 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
                             Double asOften = (howOften <= 0.0 || howOften == null) ? 0.5 : howOften;
                             Log.d("howOften", Double.toString(asOften));
                             if (LocationService.distanceTraveled(current_location, last_used_location) >= asOften) {
-                                drawDirections();
+                                if (dataConnected){
+                                    drawDirections();
+                                }
                             }
                         } else {
 
@@ -610,15 +689,20 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     // CHECK INTERNET CONNECTION
 
     private void networkAvailabilityMessage() {
-        if (!isConnected()){
-            Toast toast = Toast.makeText(this, "No network available", Toast.LENGTH_SHORT);
-            toast.show();
+        if (!dataConnected){
+            noDataMessage();
         } else {
             Toast toast = Toast.makeText(this, "You are connected", Toast.LENGTH_SHORT);
             toast.show();
         }
 
     }
+
+    private void noDataMessage() {
+        Toast toast = Toast.makeText(this, "No data network available. Service paused temporarily.", Toast.LENGTH_SHORT);
+        toast.show();
+    }
+
     private boolean isConnected() {
 
         ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Activity.CONNECTIVITY_SERVICE);

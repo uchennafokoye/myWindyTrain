@@ -23,15 +23,7 @@ public class MainActivity extends Activity implements View.OnClickListener{
     private boolean bound = false;
     private boolean paused = false;
 
-
-    ProgressDialog progressDialog;
-    private int progressBarStatus;
-    private Handler progressBarHandler = new Handler();
-
     final Handler handler = new Handler();
-
-
-
 
 
 
@@ -46,12 +38,6 @@ public class MainActivity extends Activity implements View.OnClickListener{
 
     private void init() {
 
-        progressDialog = new ProgressDialog(this);
-        progressDialog.setCancelable(false);
-        progressDialog.setMessage("Getting Location");
-        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        progressDialog.setMax(100);
-
         LinearLayout trainBlocks = (LinearLayout) findViewById(R.id.train_blocks);
         for (int i = 0; i < trainBlocks.getChildCount(); i++) {
             View v = trainBlocks.getChildAt(i);
@@ -65,7 +51,6 @@ public class MainActivity extends Activity implements View.OnClickListener{
         current_location = (LocationService.customLocation) intent.getSerializableExtra(Map.SAVED_CURRENT_LOCATION);
         Log.d("FROM_INTENT_MAIN", current_location + "");
 
-//        initializeProgressDialog();
 
     }
 
@@ -110,8 +95,8 @@ public class MainActivity extends Activity implements View.OnClickListener{
             intent.putExtra(Map.COLORMESSAGE, color);
         }
 
-//        intent.putExtra(Map.SAVED_CURRENT_LOCATION, current_location);
-//        Log.d("TRANSFER TO MAP", current_location + "");
+        intent.putExtra(Map.SAVED_CURRENT_LOCATION, current_location);
+        Log.d("TRANSFER TO MAP", current_location + "");
 
         startActivity(intent);
 
