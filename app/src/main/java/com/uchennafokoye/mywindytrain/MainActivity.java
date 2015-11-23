@@ -28,109 +28,7 @@ public class MainActivity extends Activity implements View.OnClickListener{
     private int progressBarStatus;
     private Handler progressBarHandler = new Handler();
 
-
-
-
-//    private void initializeProgressDialog() {
-//        progressDialog = new ProgressDialog(this);
-//        progressDialog.setCancelable(true);
-//        progressDialog.setMessage("Loading Closest Location");
-//        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-//        progressDialog.setProgress(0);
-//        progressDialog.setMax(100);
-//        progressDialog.show();
-//
-//        progressBarStatus = 0;
-//
-//        new Thread(new Runnable() {
-//            private int progressValueAnimatable = 0;
-//
-//            public void run() {
-//
-//                while (progressBarStatus < 100) {
-//
-//                    int currentProgressValue = getProgressValue();
-//                    if (progressValueAnimatable >= currentProgressValue){
-//                        if ((progressValueAnimatable + 10) < nextProgressLevel(currentProgressValue)) {
-//                            progressValueAnimatable += 10;
-//
-//                        }
-//                    } else {
-//                        progressValueAnimatable = getProgressValue();
-//                    }
-//
-//                    progressBarStatus = progressValueAnimatable;
-//                    Log.d("ProgressValue", progressBarStatus + "");
-//
-//                    try {
-//                        Thread.sleep(1000);
-//
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//
-//                    progressBarHandler.post(new Runnable() {
-//                        public void run() {
-//                            progressDialog.setProgress(progressBarStatus);
-//                        }
-//                    });
-//
-//
-//                }
-//
-//                if (progressBarStatus >= 100){
-//                    try {
-//                        Thread.sleep(1000);
-//
-//                    } catch(InterruptedException e){
-//                        e.printStackTrace();
-//                    }
-//
-//                    progressDialog.dismiss();
-//
-//                }
-//
-//            }
-//
-//            public int getProgressValue() {
-//
-//                if (current_location == null){
-//                    return 50;
-//                }
-//
-//                return 100;
-//
-//            }
-//
-//            public int nextProgressLevel(int progressValue) {
-//
-//                int nextProgressLevel;
-//                switch (progressValue){
-//                    case 0:
-//                        nextProgressLevel = 10;
-//                        break;
-//                    case 10:
-//                        nextProgressLevel = 50;
-//                        break;
-//                    case 50:
-//                        nextProgressLevel = 70;
-//                        break;
-//                    case 70:
-//                        nextProgressLevel = 99;
-//                        break;
-//                    case 99:
-//                        nextProgressLevel = 100;
-//                        break;
-//                    default:
-//                        nextProgressLevel = 100;
-//                        break;
-//                }
-//
-//                return nextProgressLevel;
-//            }
-//
-//        }).start();
-//    }
+    final Handler handler = new Handler();
 
 
 
@@ -148,8 +46,14 @@ public class MainActivity extends Activity implements View.OnClickListener{
 
     private void init() {
 
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setCancelable(false);
+        progressDialog.setMessage("Getting Location");
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progressDialog.setMax(100);
+
         LinearLayout trainBlocks = (LinearLayout) findViewById(R.id.train_blocks);
-        for (int i = 0; i < trainBlocks.getChildCount(); i++){
+        for (int i = 0; i < trainBlocks.getChildCount(); i++) {
             View v = trainBlocks.getChildAt(i);
             v.setOnClickListener(this);
         }
@@ -161,7 +65,6 @@ public class MainActivity extends Activity implements View.OnClickListener{
         current_location = (LocationService.customLocation) intent.getSerializableExtra(Map.SAVED_CURRENT_LOCATION);
         Log.d("FROM_INTENT_MAIN", current_location + "");
 
-        watchLocation();
 //        initializeProgressDialog();
 
     }
@@ -182,42 +85,19 @@ public class MainActivity extends Activity implements View.OnClickListener{
         }
     };
 
-    private void watchLocation() {
-        final Handler handler = new Handler();
-        handler.post(new Runnable() {
+    Runnable watchLocation = new Runnable() {
             @Override
             public void run() {
                 if (locationService != null) {
-
-                    while (locationService.getLatLngLocation() == null){
-                        Log.d("WATCH_LOCATION", "Location is null");
-
-                        try {
-                            Thread.sleep(1000);
-                        } catch(InterruptedException e){
-                            Log.d("WATCH_LOCATION", "Sleep interrupted");
-                        }
-
-                    }
-
-
-                    // To make sure we get accurate location
-                    try {
-                        Thread.sleep(3000);
-                    } catch(InterruptedException e){
-                        Log.d("WATCH_LOCATION", "Sleep interrupted");
-                    }
-
 
                     current_location = locationService.getLatLngLocation();
                     Log.d("current_location", current_location + "");
 
                 }
 
-                if (!paused) handler.postDelayed(this, 10000);
+                if (!paused) handler.postDelayed(this, (current_location == null) ? 1000 : 10000);
             }
-        });
-    }
+        };
 
     @Override
     public void onClick(View v){
@@ -230,8 +110,8 @@ public class MainActivity extends Activity implements View.OnClickListener{
             intent.putExtra(Map.COLORMESSAGE, color);
         }
 
-        intent.putExtra(Map.SAVED_CURRENT_LOCATION, current_location);
-        Log.d("TRANSFER TO MAP", current_location + "");
+//        intent.putExtra(Map.SAVED_CURRENT_LOCATION, current_location);
+//        Log.d("TRANSFER TO MAP", current_location + "");
 
         startActivity(intent);
 
@@ -247,12 +127,14 @@ public class MainActivity extends Activity implements View.OnClickListener{
     @Override
     protected void onPause() {
         super.onPause();
+        handler.removeCallbacks(watchLocation);
         paused = true;
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+        handler.post(watchLocation);
         paused = false;
     }
 

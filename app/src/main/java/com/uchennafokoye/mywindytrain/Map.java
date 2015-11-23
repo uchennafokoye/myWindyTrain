@@ -29,6 +29,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import org.apache.http.HttpResponse;
@@ -62,11 +63,16 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
     ProgressDialog progressDialog;
     private int progressBarStatus;
+    private int progressValue;
     private Handler progressBarHandler = new Handler();
 
     GoogleMap googleMap;
     GoogleDirection md = new GoogleDirection();
-    private int progressValue;
+    MarkerOptions markerOptions = new MarkerOptions();
+    PolylineOptions polylineOptions = new PolylineOptions();
+
+    private final Handler handler = new Handler();
+
 
     double to_longitude;
     double to_latitude;
@@ -97,6 +103,19 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     boolean bDirUpdates;
     Double howOften;
 
+    private ServiceConnection connection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder binder){
+            LocationService.LocationBinder locationBinder = (LocationService.LocationBinder) binder;
+            locationService = locationBinder.getLocationService();
+            bound = true;
+        }
+        @Override
+        public void onServiceDisconnected(ComponentName componentName){
+            bound = false;
+        }
+    };
+
     public void goBack(View v) {
         Intent intent = new Intent(this, MainActivity.class);
         intent.putExtra(SAVED_CURRENT_LOCATION, current_location);
@@ -117,7 +136,12 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
         updatePreferences();
 
-        resetMapApp();
+        progressValue = 0;
+        progressBarStatus = 0;
+
+        progressDialog = new ProgressDialog(this);
+
+
         Intent intent = getIntent();
         color = intent.getStringExtra(COLORMESSAGE);
         current_location = (LocationService.customLocation) intent.getSerializableExtra(SAVED_CURRENT_LOCATION);
@@ -135,11 +159,12 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
         httpRequested = false;
 
-        initializeProgressDialog();
+
         setUpMapIfNeeded();
+        initializeProgressDialog();
         networkAvailabilityMessage();
         new HttpAsyncTask().execute();
-        watchLocation();
+
 
     }
 
@@ -156,8 +181,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     }
 
     private void initializeProgressDialog() {
-        progressDialog = new ProgressDialog(this);
-        progressDialog.setCancelable(true);
+        progressDialog.setCancelable(false);
         progressDialog.setMessage("Loading Closest Location");
         progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         progressDialog.setProgress(0);
@@ -292,18 +316,18 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     protected void onResume() {
         super.onResume();
         Log.d("ONCREATE", "IN ON RESUME");
-
         updatePreferences();
-        setUpMapIfNeeded();
-        resetMapApp();
+        handler.post(watchLocation);
         paused = false;
+
+
     }
 
     @Override
     protected void onPause() {
         Log.d("ONCREATE", "IN ON PAUSE");
         super.onPause();
-        resetMapApp();
+        handler.removeCallbacks(watchLocation);
         paused = true;
     }
 
@@ -312,7 +336,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
         super.onStart();
         Intent intent = new Intent(this, LocationService.class);
         bindService(intent, connection, Context.BIND_AUTO_CREATE);
-        paused = false;
         Log.d("ONCREATE", "IN ON START");
 
     }
@@ -326,8 +349,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
             unbindService(connection);
             bound = false;
         }
-        resetMapApp();
-        paused = true;
     }
 
 
@@ -482,18 +503,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
     // LOCATION SERVICE
 
-    private ServiceConnection connection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder binder){
-            LocationService.LocationBinder locationBinder = (LocationService.LocationBinder) binder;
-            locationService = locationBinder.getLocationService();
-            bound = true;
-        }
-        @Override
-        public void onServiceDisconnected(ComponentName componentName){
-            bound = false;
-        }
-    };
 
     private void drawDirections() {
 
@@ -507,7 +516,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
         LatLng toPosition = new LatLng(to_latitude, to_longitude);
         Log.d("toPosition", to_latitude + " " + to_longitude);
-        googleMap.addMarker(new MarkerOptions().position(toPosition).title(station_name).snippet(trainsAtStation));
+        googleMap.addMarker(markerOptions.position(toPosition).title(station_name).snippet(trainsAtStation));
 
         Document doc = md.getDocument(fromPosition, toPosition, GoogleDirection.MODE_WALKING);
         drawPolyline(doc);
@@ -522,7 +531,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
             cLMarker.remove();
         }
 
-        cLMarker = googleMap.addMarker(new MarkerOptions().position(current_location).title("Current Position").flat(true).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
+        cLMarker = googleMap.addMarker(markerOptions.position(current_location).title("Current Position").snippet("").flat(true).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
 
         if (firstTimeCameraMove){
             googleMap.moveCamera(CameraUpdateFactory.newLatLng(current_location));
@@ -562,56 +571,40 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
         stationNametv.setText(station_name);
     }
 
-    private void watchLocation() {
-        final Handler handler = new Handler();
-        handler.post(new Runnable() {
+    Runnable watchLocation = new Runnable() {
             @Override
             public void run() {
+                Log.d("WATCH LOCATION", "inside run");
+
+
                 if (locationService != null) {
-
-                    while (locationService.getLatLngLocation() == null){
-                        Log.d("WATCH_LOCATION", "Location is null");
-
-                        try {
-                            Thread.sleep(1000);
-                        } catch(InterruptedException e){
-                            Log.d("WATCH_LOCATION", "Sleep interrupted");
-                        }
-
-                    }
-
-
-                    // To make sure we get accurate location
-                    try {
-                        Thread.sleep(3000);
-                    } catch(InterruptedException e){
-                        Log.d("WATCH_LOCATION", "Sleep interrupted");
-                    }
 
                     current_location = locationService.getLatLngLocation();
 
 
+                    if (current_location != null) {
 
-                    if (bDirUpdates){
-                        Log.d("UPDATE DIRECTIONS", "true");
-                        Double asOften = (howOften <= 0.0 || howOften == null) ? 0.5 : howOften;
-                        Log.d("howOften", Double.toString(asOften));
-                        if (LocationService.distanceTraveled(current_location, last_used_location) >= asOften){
-                            drawDirections();
+                        if (bDirUpdates) {
+                            Log.d("UPDATE DIRECTIONS", "true");
+                            Double asOften = (howOften <= 0.0 || howOften == null) ? 0.5 : howOften;
+                            Log.d("howOften", Double.toString(asOften));
+                            if (LocationService.distanceTraveled(current_location, last_used_location) >= asOften) {
+                                drawDirections();
+                            }
+                        } else {
+
+                            drawCurrentLocation(current_location);
+
                         }
-                    } else {
-                        Log.d("UPDATE DIRECTIONS", "false");
 
                     }
 
 
                 }
 
-                if (!paused) handler.postDelayed(this, 10000);
+                if (!paused) handler.postDelayed(this, (current_location == null) ? 1000 : 10000);
             }
-        });
-    }
-
+    };
     // END LOCATION SERVICE
 
     // CHECK INTERNET CONNECTION
@@ -688,14 +681,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
     }
 
-
-
-
-
-    private void resetMapApp() {
-        progressValue = 0;
-        progressBarStatus = 0;
-    }
 
 
 
