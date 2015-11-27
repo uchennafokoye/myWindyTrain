@@ -49,7 +49,6 @@ public class MainActivity extends Activity implements View.OnClickListener{
 
         Intent intent = getIntent();
         current_location = (LocationService.customLocation) intent.getSerializableExtra(Map.SAVED_CURRENT_LOCATION);
-        Log.d("FROM_INTENT_MAIN", current_location + "");
 
 
     }
@@ -76,8 +75,6 @@ public class MainActivity extends Activity implements View.OnClickListener{
                 if (locationService != null) {
 
                     current_location = locationService.getLatLngLocation();
-                    Log.d("current_location", current_location + "");
-
                 }
 
                 if (!paused) handler.postDelayed(this, (current_location == null) ? 1000 : 10000);
@@ -96,7 +93,6 @@ public class MainActivity extends Activity implements View.OnClickListener{
         }
 
         intent.putExtra(Map.SAVED_CURRENT_LOCATION, current_location);
-        Log.d("TRANSFER TO MAP", current_location + "");
 
         startActivity(intent);
 
@@ -106,6 +102,7 @@ public class MainActivity extends Activity implements View.OnClickListener{
     @Override
     protected void onResume() {
         super.onResume();
+        handler.post(watchLocation);
         paused = false;
     }
 
@@ -119,7 +116,6 @@ public class MainActivity extends Activity implements View.OnClickListener{
     @Override
     protected void onStart() {
         super.onStart();
-        handler.post(watchLocation);
         paused = false;
     }
 

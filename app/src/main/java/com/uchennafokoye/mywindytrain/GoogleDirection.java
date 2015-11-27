@@ -35,12 +35,9 @@ public class GoogleDirection {
                 + "&destination=" + end.latitude + "," + end.longitude
                 + "&sensor=false&units=metric&mode="+mode;
 
-        Log.d("DIRECTIONSURL", url);
-
         try {
             return new HttpAsyncTask().execute(url).get();
         } catch (Exception e) {
-            Log.d("DIRECTIONSURLEXCEPTION", "Problem getting the DirectionDoc");
             e.printStackTrace();
         }
         return null;
@@ -73,8 +70,6 @@ public class GoogleDirection {
             Document doc = builder.parse(in);
             return doc;
         } catch (Exception e) {
-            Log.d("DIRECTIONSURLEXCEPTION", url);
-
             e.printStackTrace();
         }
 

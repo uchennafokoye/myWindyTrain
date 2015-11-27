@@ -33,7 +33,6 @@ public class LocationService extends Service {
             public void onLocationChanged(Location current_location){
                 location = current_location;
                 custom_location = new customLocation(current_location.getLatitude(), current_location.getLongitude());
-                Log.d("PermissionGPS", "Location Changed " + custom_location);
 
             }
 
@@ -66,7 +65,7 @@ public class LocationService extends Service {
             locManager.requestLocationUpdates(bestProvider, min_sec, min_distance, listener);
 
         } catch (SecurityException e){
-            Log.d("PermissionGPS", "Security Exception");
+            e.printStackTrace();
         }
     }
 

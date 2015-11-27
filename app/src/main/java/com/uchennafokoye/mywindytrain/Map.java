@@ -165,7 +165,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
-        Log.d("ONCREATE", "IN ON CREATE");
         init();
     }
 
@@ -183,7 +182,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
         Intent intent = getIntent();
         color = intent.getStringExtra(COLORMESSAGE);
         current_location = (LocationService.customLocation) intent.getSerializableExtra(SAVED_CURRENT_LOCATION);
-        Log.d("INTENT_GET", current_location + "");
 
         tvTrainLine = (TextView) findViewById(R.id.tv_search_criteria_info);
         setColorTVText();
@@ -251,7 +249,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
                     }
 
                     progressBarStatus = progressValueAnimatable;
-                    Log.d("ProgressValue", progressBarStatus + "");
 
                     try {
                         Thread.sleep(1000);
@@ -358,7 +355,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d("ONCREATE", "IN ON RESUME");
         updatePreferences();
         handler.post(watchLocation);
         paused = false;
@@ -388,7 +384,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
     @Override
     protected void onPause () {
-            Log.d("ONCREATE", "IN ON PAUSE");
             super.onPause();
         handler.removeCallbacks(watchLocation);
         paused = true;
@@ -405,14 +400,12 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
         super.onStart();
         Intent intent = new Intent(this, LocationService.class);
         bindService(intent, connection, Context.BIND_AUTO_CREATE);
-        Log.d("ONCREATE", "IN ON START");
 
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        Log.d("ONCREATE", "IN ON STOP");
 
         if (bound) {
             unbindService(connection);
@@ -483,7 +476,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     private class cachedMWTService extends AsyncTask<Void, Void, String>{
         @Override
         protected String doInBackground(Void... params){
-            Log.d("Thread_ID", "Thread name: " + Thread.currentThread().getName() + " Thread ID;" + Thread.currentThread().getId());
 
             while (current_location == null){
                 try { Thread.sleep(1000); }
@@ -493,7 +485,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
             String query_string = "/closest/all/" + current_location.getLatitude() + "/" + current_location.getLongitude();
             String url = "https://mwtservice.herokuapp.com" + query_string;
-            Log.d("URL", url); return GET(url);
+            return GET(url);
         }
 
         @Override
@@ -506,9 +498,8 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
                     cachedJSONHash.put(trainColor, cachedJSON);
                 }
-                Log.d("CACHEDJSON", cachedJSONHash.toString());
             }
-            catch(JSONException e) { Log.d("JSON", e.getLocalizedMessage()); }
+            catch(JSONException e) { e.printStackTrace();  }
         }
     }
 
@@ -535,7 +526,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
             }
 
             String url = "https://mwtservice.herokuapp.com" + query_string;
-            Log.d("URL", url);
             return GET(url);
         }
 
@@ -553,10 +543,9 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
                     noDataMessage();
                 }
 
-                Log.d("current_location", current_location + "");
 
             } catch(JSONException e) {
-                Log.d("JSON", e.getLocalizedMessage());
+                e.printStackTrace();
             }
 
             if (dataConnected){
@@ -596,7 +585,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
         drawCurrentLocation(fromPosition);
 
         LatLng toPosition = new LatLng(to_latitude, to_longitude);
-        Log.d("toPosition", to_latitude + " " + to_longitude);
         googleMap.addMarker(markerOptions.position(toPosition).title(station_name).snippet(trainsAtStation));
 
         Document doc = md.getDocument(fromPosition, toPosition, GoogleDirection.MODE_WALKING);
@@ -653,7 +641,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     Runnable watchLocation = new Runnable() {
             @Override
             public void run() {
-                Log.d("WATCH LOCATION", "inside run");
 
 
                 if (locationService != null) {
@@ -662,9 +649,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
                     if (current_location != null) {
 
                         if (bDirUpdates) {
-                            Log.d("UPDATE DIRECTIONS", "true");
                             Double asOften = (howOften <= 0.0 || howOften == null) ? 0.5 : howOften;
-                            Log.d("howOften", Double.toString(asOften));
                             if (LocationService.distanceTraveled(current_location, last_used_location) >= asOften) {
                                 if (dataConnected){
                                     drawDirections();
@@ -727,7 +712,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
             if (inputStream != null){
                 result = convertInputStreamToString(inputStream);
-                Log.d("InputStream","In GET result: " + result + "inputStream =  " + inputStream);
 
             } else {
                 result = "Did not work!";
@@ -737,7 +721,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
 
         } catch (Exception e) {
-            Log.d("InputStream", e.getLocalizedMessage());
+            e.printStackTrace();
         }
 
         return result;
@@ -748,8 +732,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
         String line;
         String result = "";
 
-        Log.d("InputStream", "In Input Stream" + inputStream);
-
         try {
 
             while ((line = bufferedReader.readLine()) != null){
@@ -758,7 +740,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
             inputStream.close();
 
         } catch(Exception e) {
-            Log.d("InputStream", e.getLocalizedMessage());
+            e.printStackTrace();
         }
 
         return result;
