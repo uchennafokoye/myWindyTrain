@@ -58,8 +58,8 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
     public static final String COLORMESSAGE = "message";
     public static final String SAVED_CURRENT_LOCATION = "saved_current_location";
+    public static final String SERVICE_ACCESS_TOKEN = "5RhswyZ4wqeThxrXZ47cYJKP";
 
-    private Object mPauseLock;
     private boolean paused = false;
 
     ProgressDialog progressDialog;
@@ -70,7 +70,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     GoogleMap googleMap;
     GoogleDirection md = new GoogleDirection();
     MarkerOptions markerOptions = new MarkerOptions();
-    PolylineOptions polylineOptions = new PolylineOptions();
 
     private final Handler handler = new Handler();
 
@@ -157,6 +156,10 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
         Intent intent = new Intent(this, MainActivity.class);
         intent.putExtra(SAVED_CURRENT_LOCATION, current_location);
         startActivity(intent);
+    }
+
+    public void expandSpinner(View v){
+        colorSpinner.performClick();
     }
 
 
@@ -359,7 +362,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
         handler.post(watchLocation);
         paused = false;
         dataConnected = isConnected();
-        // sets pause or unpause based on availability
         networkAvailabilityMessage();
 
         if (dataConnected){
@@ -367,9 +369,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
         }
 
 
-        /* BroadcastReceiver
-
-         */
+        /* BroadcastReceiver*/
 
         if (!mIsReceiverRegistered){
             if (mReceiver == null) mReceiver = new NetworkChangeBR();
@@ -484,6 +484,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
             }
 
             String query_string = "/closest/all/" + current_location.getLatitude() + "/" + current_location.getLongitude();
+            query_string += "/" + SERVICE_ACCESS_TOKEN;
             String url = "https://mwtservice.herokuapp.com" + query_string;
             return GET(url);
         }
@@ -520,11 +521,10 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
 
             last_used_location = current_location;
             String query_string = "/closest/" + current_location.getLatitude() + "/" + current_location.getLongitude();
-
             if (color != null) {
                 query_string += "/" + color;
             }
-
+            query_string += "/" + SERVICE_ACCESS_TOKEN;
             String url = "https://mwtservice.herokuapp.com" + query_string;
             return GET(url);
         }

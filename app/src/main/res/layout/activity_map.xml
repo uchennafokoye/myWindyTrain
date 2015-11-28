@@ -48,9 +48,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/tv_search_criteria_info"
-                android:text="Green Line"
+                android:text="Purple Line"
                 android:textStyle="bold"
-                android:textColor="@color/green"
+                android:textColor="@color/purple"
+                android:onClick="expandSpinner"
 
                 />
 

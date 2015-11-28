@@ -11,9 +11,9 @@
             />
 
         <EditTextPreference android:title="Update how often? (In KM)"
-            android:defaultValue="0.5"
+            android:defaultValue="0.01"
             android:key="howOften"
-            android:summary="In KM | Default is 0.5 km"
+            android:summary="In KM | Default is 0.01 km"
             android:dependency="directionUpdates"
             android:inputType="number"
             />
