@@ -585,7 +585,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
         drawCurrentLocation(fromPosition);
 
         LatLng toPosition = new LatLng(to_latitude, to_longitude);
-        googleMap.addMarker(markerOptions.position(toPosition).title(station_name).snippet(trainsAtStation));
+        googleMap.addMarker(markerOptions.position(toPosition).title(station_name).snippet(trainsAtStation).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
 
         Document doc = md.getDocument(fromPosition, toPosition, GoogleDirection.MODE_WALKING);
         drawPolyline(doc);
@@ -600,7 +600,7 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
             cLMarker.remove();
         }
 
-        cLMarker = googleMap.addMarker(markerOptions.position(current_location).title("Current Position").snippet("").flat(true).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
+        cLMarker = googleMap.addMarker(markerOptions.position(current_location).title("Current Position").snippet("").flat(true).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
 
         if (firstTimeCameraMove){
             googleMap.moveCamera(CameraUpdateFactory.newLatLng(current_location));
