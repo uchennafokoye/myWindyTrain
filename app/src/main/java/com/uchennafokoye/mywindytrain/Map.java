@@ -676,9 +676,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     private void networkAvailabilityMessage() {
         if (!dataConnected){
             noDataMessage();
-        } else {
-            Toast toast = Toast.makeText(this, "You are connected", Toast.LENGTH_SHORT);
-            toast.show();
         }
 
     }

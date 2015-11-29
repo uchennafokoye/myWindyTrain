@@ -27,7 +27,7 @@
             android:id="@+id/app_logo"
             android:layout_width="@dimen/image_size"
             android:layout_height="@dimen/image_size"
-            android:src="@mipmap/logo"
+            android:src="@mipmap/ic_launcher"
             android:contentDescription="@string/app_logo"
             android:layout_marginBottom="@dimen/activity_vertical_margin"
             />
