@@ -11,18 +11,18 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
         android:background="@color/black"
 
         >
 
 
-        <ImageView
+        <ImageButton
             android:layout_width="40dp"
             android:layout_height="wrap_content"
-            android:src="@mipmap/back_button"
+            android:src="@drawable/ic_arrow_back"
             android:onClick="goBack"
-            android:contentDescription="Back Button" />
+            android:layout_gravity="center_vertical"
+            android:contentDescription="@string/content_description_back_button" />
 
 
         <TextView
@@ -31,6 +31,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/train_block_section_margin"
             android:layout_marginLeft="@dimen/train_block_section_margin"
+            android:layout_marginStart="@dimen/train_block_section_margin"
             android:text="You searched for: "
             android:textStyle="bold"
             android:textColor="@color/white"
@@ -39,7 +40,7 @@
         <RelativeLayout
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/abc_action_bar_content_inset_material"
             android:layout_marginBottom="@dimen/abc_action_bar_content_inset_material"
 >
@@ -48,10 +49,12 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/tv_search_criteria_info"
-                android:text="Purple Line"
+                android:text="@string/label_placeholder"
                 android:textStyle="bold"
                 android:textColor="@color/purple"
                 android:onClick="expandSpinner"
+                android:layout_marginLeft="@dimen/abc_button_padding_horizontal_material"
+                android:layout_marginStart="@dimen/abc_button_padding_horizontal_material"
 
                 />
 
@@ -61,8 +64,11 @@
                     android:id="@+id/color_spinner"
                     android:layout_width="20dp"
                     android:layout_height="20dp"
+                    android:layout_toEndOf="@id/tv_search_criteria_info"
                     android:layout_toRightOf="@id/tv_search_criteria_info"
                     android:layout_marginLeft="@dimen/abc_button_padding_horizontal_material"
+                    android:layout_marginStart="@dimen/abc_button_padding_horizontal_material"
+
 
 
                     >
@@ -88,7 +94,6 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
         android:background="@color/logo_orange"
 
 
@@ -103,6 +108,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/train_block_section_margin"
             android:layout_marginLeft="@dimen/train_block_section_margin"
+            android:layout_marginStart="@dimen/train_block_section_margin"
             android:text="Loading..."
             android:textColor="@color/black"
             android:textStyle="bold"
@@ -127,7 +133,8 @@
             android:id="@+id/tv_station_info_duration"
             android:layout_marginTop="@dimen/train_block_section_margin"
             android:layout_marginRight="@dimen/train_block_section_margin"
-            android:gravity="right"
+            android:layout_marginEnd="@dimen/train_block_section_margin"
+            android:gravity="end"
             android:text=""
             android:textStyle="bold"
             android:textColor="@color/black"
@@ -145,7 +152,5 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         />
-
-
 
 </LinearLayout>

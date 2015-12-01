@@ -11,17 +11,15 @@
     <color name="purple">#522398</color>
     <color name="pink">#f49ac1</color>
     <color name="yellow">#fff200</color>
-
-
     <color name="offwhite">#bdc3ca</color>
-
-
-
+    <color name="transparentblack">#80000000</color>
     <color name="logo_orange">#ffa500</color>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="android:Theme.Holo.Light.NoActionBar">
-
+    <style name="AppTheme" parent="android:Theme.Black.NoTitleBar">
+        <item name="android:colorBackground">@color/black</item>
+        <item name="android:color">@color/white</item>
     </style>
+
 
 </resources>

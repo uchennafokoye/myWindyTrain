@@ -2,7 +2,7 @@
     <!-- Default screen margins, per the Android Design guidelines. -->
     <dimen name="activity_horizontal_margin">14dp</dimen>
     <dimen name="activity_vertical_margin">14dp</dimen>
-    <dimen name="train_block_height">35dp</dimen>
+    <dimen name="train_block_height">39dp</dimen>
     <dimen name="train_block_margin">2dp</dimen>
     <dimen name="train_block_section_margin">16dp</dimen>
 

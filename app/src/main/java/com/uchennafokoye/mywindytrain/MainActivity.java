@@ -6,13 +6,18 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.animation.AlphaAnimation;
 import android.widget.Button;
 import android.widget.LinearLayout;
 
@@ -22,6 +27,8 @@ public class MainActivity extends Activity implements View.OnClickListener{
     private LocationService locationService;
     private boolean bound = false;
     private boolean paused = false;
+    public static AlphaAnimation buttonClick = new AlphaAnimation(1F, 0.8F);
+
 
     final Handler handler = new Handler();
 
@@ -77,14 +84,16 @@ public class MainActivity extends Activity implements View.OnClickListener{
                     current_location = locationService.getLatLngLocation();
                 }
 
-                if (!paused) handler.postDelayed(this, (current_location == null) ? 1000 : 10000);
+                handler.postDelayed(this, 1000);
             }
         };
+
+
 
     @Override
     public void onClick(View v){
 
-
+        v.startAnimation(buttonClick);
         String color = (String) v.getTag();
         color = (color.equals("any")) ? null : color;
         Intent intent = new Intent(this, Map.class);
@@ -92,7 +101,7 @@ public class MainActivity extends Activity implements View.OnClickListener{
             intent.putExtra(Map.COLORMESSAGE, color);
         }
 
-        intent.putExtra(Map.SAVED_CURRENT_LOCATION, current_location);
+//        intent.putExtra(Map.SAVED_CURRENT_LOCATION, current_location);
 
         startActivity(intent);
 

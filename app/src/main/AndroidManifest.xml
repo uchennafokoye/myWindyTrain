@@ -30,8 +30,10 @@
 
         <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
-            android:value="AIzaSyA1Qxv1QUaEVmyh-Ai3CB9BNvZFRVYks3o" />
-        <!-- android:value="AIzaSyCrNh_vnqP_cm-ZN2ElJVdQ_qqapZ_-vYc" /> -->
+            android:value="AIzaSyCkca4NhVsgafo5QmAeTvZfowGlCeNVAk0" />
+
+         <!-- PUBLISHED KEY -->
+            <!-- android:value="AIzaSyABlzfyksEySNhD-CoalylDO_OjMNG8W-8"/> -->
 
         <service
             android:name=".LocationService"

@@ -8,6 +8,7 @@ import android.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 
 
@@ -16,7 +17,7 @@ import android.widget.ImageView;
  */
 public class SettingsIconFragment extends Fragment implements View.OnClickListener{
 
-    ImageView imageView;
+    ImageButton imageButton;
 
 
     public SettingsIconFragment() {
@@ -34,8 +35,8 @@ public class SettingsIconFragment extends Fragment implements View.OnClickListen
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        imageView = (ImageView) getActivity().findViewById(R.id.settings_icon);
-        imageView.setOnClickListener(this);
+        imageButton = (ImageButton) getActivity().findViewById(R.id.settings_icon);
+        imageButton.setOnClickListener(this);
     }
 
     public void onClick(final View v) {

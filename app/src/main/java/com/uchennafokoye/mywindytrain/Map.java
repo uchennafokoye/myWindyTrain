@@ -27,6 +27,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -603,7 +604,14 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
         cLMarker = googleMap.addMarker(markerOptions.position(current_location).title("Current Position").snippet("").flat(true).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
 
         if (firstTimeCameraMove){
-            googleMap.moveCamera(CameraUpdateFactory.newLatLng(current_location));
+            googleMap.animateCamera(CameraUpdateFactory.newLatLng(current_location));
+
+            CameraPosition cameraPosition = new CameraPosition.Builder()
+                    .target(current_location)      // Sets the center of the map to location user
+                    .zoom(17)                   // Sets the zoom
+                    .bearing(180)                // Sets the orientation of the camera to east
+                    .build();                   // Creates a CameraPosition from the builder
+            googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
             firstTimeCameraMove = false;
         }
 
@@ -648,8 +656,12 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
                     current_location = locationService.getLatLngLocation();
                     if (current_location != null) {
 
+//                        if (!httpRequested) {
+//                            googleMap.animateCamera(CameraUpdateFactory.newLatLng( new LatLng(current_location.getLatitude(), current_location.getLongitude())));
+//                        }
+
                         if (bDirUpdates) {
-                            Double asOften = (howOften <= 0.0 || howOften == null) ? 0.5 : howOften;
+                            Double asOften = (howOften <= 0.0 || howOften == null) ? 0.01 : howOften;
                             if (LocationService.distanceTraveled(current_location, last_used_location) >= asOften) {
                                 if (dataConnected){
                                     drawDirections();

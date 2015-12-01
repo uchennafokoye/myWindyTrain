@@ -67,8 +67,7 @@ public class GoogleDirection {
             HttpResponse response = httpClient.execute(httpPost, localContext);
             InputStream in = response.getEntity().getContent();
             DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            Document doc = builder.parse(in);
-            return doc;
+            return builder.parse(in);
         } catch (Exception e) {
             e.printStackTrace();
         }
