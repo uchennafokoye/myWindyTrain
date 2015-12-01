@@ -53,15 +53,15 @@ public class LocationService extends Service {
         LocationManager locManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         try {
 
-            Long min_sec = (long) 5000;
+            Long min_sec = (long) 1000;
             Float min_distance = (float) 1.0;
-
+//
 //            Criteria criteria = new Criteria();
 //            String bestProvider = locManager.getBestProvider(criteria, true);
-            location = locManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-            if (location != null){
-                custom_location = new customLocation(location.getLatitude(), location.getLongitude());
-            }
+//            location = locManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+//            if (location != null){
+//                custom_location = new customLocation(location.getLatitude(), location.getLongitude());
+//            }
             locManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, min_sec, min_distance, listener);
 
         } catch (SecurityException e){

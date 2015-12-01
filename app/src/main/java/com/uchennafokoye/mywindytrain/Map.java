@@ -154,12 +154,14 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
     }
 
     public void goBack(View v) {
+        v.startAnimation(MainActivity.buttonClick);
         Intent intent = new Intent(this, MainActivity.class);
         intent.putExtra(SAVED_CURRENT_LOCATION, current_location);
         startActivity(intent);
     }
 
     public void expandSpinner(View v){
+        v.startAnimation(MainActivity.buttonClick);
         colorSpinner.performClick();
     }
 
@@ -421,7 +423,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
         if (googleMap == null) {
             googleMap = ((MapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
         }
-        googleMap.animateCamera(CameraUpdateFactory.zoomTo(18));
     }
 
 
@@ -609,7 +610,6 @@ public class Map extends Activity implements AdapterView.OnItemSelectedListener 
             CameraPosition cameraPosition = new CameraPosition.Builder()
                     .target(current_location)      // Sets the center of the map to location user
                     .zoom(17)                   // Sets the zoom
-                    .bearing(180)                // Sets the orientation of the camera to east
                     .build();                   // Creates a CameraPosition from the builder
             googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
             firstTimeCameraMove = false;
